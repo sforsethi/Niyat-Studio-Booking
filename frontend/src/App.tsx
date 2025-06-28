@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Calendar from './components/Calendar';
 import CalendarLink from './components/CalendarLink';
+import AdminPanel from './components/AdminPanel';
 import './App.css';
 
 // RecurringData type definition with discount support
@@ -15,6 +16,7 @@ interface RecurringData {
 }
 
 function App() {
+  const [showAdmin, setShowAdmin] = useState<boolean>(false);
   const [step, setStep] = useState<number>(0); // Start at 0 for booking type selection
   const [bookingType, setBookingType] = useState<'onetime' | 'recurring' | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -79,11 +81,41 @@ function App() {
     return `${displayHour}:00 ${ampm}`;
   };
 
+  // Show admin panel
+  if (showAdmin) {
+    return <AdminPanel onBack={() => setShowAdmin(false)} />;
+  }
+
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Studio Booking System</h1>
-        <p>Book your studio time at ₹950 per hour</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1200px' }}>
+          <div>
+            <h1>Studio Booking System</h1>
+            <p>Book your studio time at ₹950 per hour</p>
+          </div>
+          <button
+            onClick={() => setShowAdmin(true)}
+            style={{
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = '#5a6268';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = '#6c757d';
+            }}
+          >
+            📊 Admin Panel
+          </button>
+        </div>
       </header>
       
       <main>

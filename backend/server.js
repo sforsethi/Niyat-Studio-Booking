@@ -56,6 +56,41 @@ if (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
 
 // Routes
 
+// Home route
+app.get('/', (req, res) => {
+  res.json({ message: 'Studio Booking API is running!' });
+});
+
+// Admin route to view all bookings
+app.get('/admin/bookings', (req, res) => {
+  db.all("SELECT * FROM bookings ORDER BY createdAt DESC", (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    
+    // Format the response for better readability
+    const formattedBookings = rows.map(booking => ({
+      id: booking.id,
+      name: booking.name,
+      email: booking.email,
+      phone: booking.phone,
+      date: booking.date,
+      startTime: booking.startTime,
+      duration: booking.duration,
+      totalAmount: booking.totalAmount,
+      status: booking.status,
+      paymentId: booking.razorpayPaymentId,
+      bookedAt: booking.createdAt
+    }));
+    
+    res.json({
+      total: rows.length,
+      bookings: formattedBookings
+    });
+  });
+});
+
 // Get available time slots
 app.get('/api/availability/:date', async (req, res) => {
   try {
