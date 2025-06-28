@@ -4,24 +4,25 @@
 
 ### Option 1: Automatic GitHub Deployment (Recommended)
 
-1. **Visit Vercel**: Go to [vercel.com](https://vercel.com) and sign up/login
+1. **Visit Vercel**: Go to [vercel.com](https://vercel.com) and sign up/login with GitHub
 2. **Import Repository**: Click "New Project" → "Import Git Repository"
 3. **Select Repository**: Choose `sforsethi/Niyat-Studio-Booking`
 4. **Configure Project**:
    - Framework Preset: **Vite**
-   - Root Directory: **frontend**
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
+   - Root Directory: **frontend** (IMPORTANT!)
+   - Build Command: `npm run build` (auto-detected)
+   - Output Directory: `dist` (auto-detected)
+   - Install Command: `npm install` (auto-detected)
 
 5. **Environment Variables** (Add in Vercel dashboard):
    ```
-   REACT_APP_RAZORPAY_KEY_ID=your_real_razorpay_key
-   REACT_APP_API_URL=https://your-backend-url.railway.app
-   REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
-   REACT_APP_GOOGLE_API_KEY=your_google_api_key
+   REACT_APP_RAZORPAY_KEY_ID=rzp_test_demo_key_id
+   REACT_APP_API_URL=http://localhost:5001
+   REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id_here
+   REACT_APP_GOOGLE_API_KEY=your_google_api_key_here
    ```
 
-6. **Deploy**: Click "Deploy" - Your site will be live at `https://niyat-studio-booking.vercel.app`
+6. **Deploy**: Click "Deploy" - Your site will be live in 2-3 minutes!
 
 ### Option 2: Vercel CLI Deployment
 
