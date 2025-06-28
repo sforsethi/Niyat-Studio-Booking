@@ -66,7 +66,7 @@ const GoogleCalendarAvailability: React.FC<GoogleCalendarAvailabilityProps> = ({
         gapi.load('auth2:client', () => {
           console.log('✅ Google API auth2:client loaded successfully');
           resolve();
-        }, (error: any) => {
+        }, (error: unknown) => {
           console.error('❌ Error loading Google API auth2:client:', error);
           reject(error);
         });
@@ -137,7 +137,7 @@ const GoogleCalendarAvailability: React.FC<GoogleCalendarAvailabilityProps> = ({
       console.log('📊 Calendar API response:', {
         status: response.status,
         itemCount: response.result.items?.length || 0,
-        events: response.result.items?.map(e => ({
+        events: response.result.items?.map((e: any) => ({
           summary: e.summary,
           start: e.start?.dateTime,
           end: e.end?.dateTime

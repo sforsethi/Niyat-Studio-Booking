@@ -282,7 +282,7 @@ function App() {
                     const selectedDay = new Date(selectedDate);
                     
                     // Find next 4 weeks starting from selected date (including the selected date)
-                    const weeklyDates = [];
+                    const weeklyDates: Date[] = [];
                     for (let i = 0; i < 4; i++) {
                       const nextWeek = new Date(selectedDay);
                       nextWeek.setDate(selectedDay.getDate() + (i * 7));
