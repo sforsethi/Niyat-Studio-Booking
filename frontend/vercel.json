@@ -1,25 +1,8 @@
 {
-  "name": "niyat-studio-booking",
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
-  "env": {
-    "REACT_APP_RAZORPAY_KEY_ID": "rzp_test_demo_key_id",
-    "REACT_APP_API_URL": "https://your-backend-url.railway.app",
-    "REACT_APP_GOOGLE_CLIENT_ID": "your_google_client_id_here",
-    "REACT_APP_GOOGLE_API_KEY": "your_google_api_key_here"
-  }
+  ]
 }
