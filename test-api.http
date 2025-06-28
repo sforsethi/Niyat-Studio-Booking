@@ -1,0 +1,27 @@
+### Test availability endpoint
+GET http://localhost:5001/api/availability/2024-12-25
+
+### Test create order endpoint  
+POST http://localhost:5001/api/create-order
+Content-Type: application/json
+
+{
+  "amount": 950,
+  "currency": "INR"
+}
+
+### Test booking creation
+POST http://localhost:5001/api/bookings
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@test.com", 
+  "phone": "9876543210",
+  "date": "2024-12-25",
+  "startTime": "10:00",
+  "duration": 2,
+  "razorpayOrderId": "test_order_123",
+  "razorpayPaymentId": "test_payment_123",
+  "razorpaySignature": "test_signature"
+}
