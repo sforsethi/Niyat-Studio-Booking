@@ -95,20 +95,51 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ date, duration, onTimeSelect }) =
   if (availableSlots.length === 0) {
     return (
       <div className="time-slots no-slots">
-        <p>No available time slots for {duration} hour{duration > 1 ? 's' : ''} on this date.</p>
-        <p>Try selecting a different duration or date.</p>
+        <div style={{
+          padding: '20px',
+          backgroundColor: '#f8d7da',
+          borderRadius: '8px',
+          border: '1px solid #f5c6cb',
+          textAlign: 'center'
+        }}>
+          <p style={{ margin: '0 0 10px 0', color: '#721c24', fontWeight: 'bold' }}>
+            ❌ No Available Time Slots
+          </p>
+          <p style={{ margin: '0', color: '#721c24', fontSize: '14px' }}>
+            All time slots for {duration} hour{duration > 1 ? 's' : ''} are booked on this date.
+            Try selecting a shorter duration or different date.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="time-slots">
+      <div style={{ 
+        marginBottom: '15px', 
+        padding: '12px', 
+        backgroundColor: '#e8f5e8', 
+        borderRadius: '8px',
+        border: '1px solid #c3e6cb'
+      }}>
+        <p style={{ margin: '0', fontSize: '14px', color: '#155724' }}>
+          ✅ <strong>Available Time Slots</strong> - Booked times are automatically filtered out to prevent double bookings
+        </p>
+      </div>
+
       <div className="slots-grid">
         {availableSlots.map((slot) => (
           <button
             key={slot}
             className="time-slot"
             onClick={() => onTimeSelect(slot)}
+            style={{
+              background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+              border: '2px solid #20c997',
+              color: 'white',
+              boxShadow: '0 2px 4px rgba(40, 167, 69, 0.3)'
+            }}
           >
             <div className="slot-time">
               {formatTimeSlot(slot)} - {getEndTime(slot, duration)}
@@ -121,6 +152,18 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ date, duration, onTimeSelect }) =
             </div>
           </button>
         ))}
+      </div>
+
+      <div style={{ 
+        marginTop: '15px', 
+        fontSize: '12px', 
+        color: '#666', 
+        textAlign: 'center',
+        padding: '8px',
+        backgroundColor: '#f8f9fa',
+        borderRadius: '4px'
+      }}>
+        🕘 Studio Hours: 9:00 AM - 9:00 PM | All bookings must end by 9:00 PM
       </div>
     </div>
   );

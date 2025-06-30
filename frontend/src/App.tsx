@@ -108,7 +108,13 @@ function App() {
         alert('Booking confirmed successfully! (Payment bypassed for testing)');
         setStep(5); // Move to confirmation step
       } else {
-        alert('Booking failed. Please try again.');
+        if (response.status === 409) {
+          // Conflict error - double booking detected
+          alert(`❌ Booking Conflict!\n\n${result.error}\n\nTime: ${result.conflictDetails}\n\nPlease select a different time slot.`);
+          setStep(2); // Go back to time selection
+        } else {
+          alert('Booking failed. Please try again.');
+        }
       }
     } catch (error) {
       alert('Booking failed. Please try again.');
@@ -122,6 +128,25 @@ function App() {
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
     return `${displayHour}:00 ${ampm}`;
+  };
+
+  const formatDateDisplay = (dateString: string) => {
+    // Create date in local timezone to avoid UTC conversion issues
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  };
+
+  const formatShortDate = (dateString: string) => {
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const getWeekday = (dateString: string) => {
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    return date.toLocaleDateString('en-US', { weekday: 'long' });
   };
 
   // Show admin panel
@@ -377,7 +402,7 @@ function App() {
               
               <div className="booking-summary" style={{ marginBottom: '30px' }}>
                 <h3>Base Session Details</h3>
-                <p><strong>Selected Day:</strong> {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+                <p><strong>Selected Day:</strong> {formatDateDisplay(selectedDate)}</p>
                 <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)}</p>
                 <p><strong>Duration:</strong> {duration} hour{duration > 1 ? 's' : ''}</p>
                 <p><strong>Cost per session:</strong> ₹{duration * 1150}</p>
@@ -390,14 +415,15 @@ function App() {
                 border: '2px solid #e9ecef',
                 marginBottom: '25px'
               }}>
-                <h3 style={{ marginTop: 0, color: '#495057' }}>📅 Book Next 4 {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })}s</h3>
+                <h3 style={{ marginTop: 0, color: '#495057' }}>📅 Book Next 4 {getWeekday(selectedDate)}s</h3>
                 <p style={{ margin: '0 0 20px 0', color: '#666' }}>
-                  Book the next 4 {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })}s starting from {new Date(selectedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at the same time
+                  Book the next 4 {getWeekday(selectedDate)}s starting from {formatShortDate(selectedDate)} at the same time
                 </p>
                 
                 <div style={{ display: 'grid', gap: '15px', marginBottom: '20px' }}>
                   {(() => {
-                    const selectedDay = new Date(selectedDate);
+                    const [year, month, day] = selectedDate.split('-');
+                    const selectedDay = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
                     
                     // Find next 4 weeks starting from selected date (including the selected date)
                     const weeklyDates: Date[] = [];
@@ -444,7 +470,7 @@ function App() {
                             ).join(', ')}</p>
                             <p style={{ margin: '2px 0' }}>⏰ Time: {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)} (all sessions)</p>
                             <p style={{ margin: '2px 0' }}>⌛ Duration: {duration} hour{duration > 1 ? 's' : ''} per session</p>
-                            <p style={{ margin: '2px 0' }}>📆 Every {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })} for 4 weeks</p>
+                            <p style={{ margin: '2px 0' }}>📆 Every {getWeekday(selectedDate)} for 4 weeks</p>
                           </div>
                           
                           <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
@@ -523,7 +549,7 @@ function App() {
                 <ul style={{ margin: 0, paddingLeft: '20px' }}>
                   <li>🎯 Guaranteed studio time for 4 consecutive weeks</li>
                   <li>💰 20% discount on 4-week package</li>
-                  <li>📅 Same time every {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })}</li>
+                  <li>📅 Same time every {getWeekday(selectedDate)}</li>
                   <li>✅ Easy to maintain consistent routine</li>
                 </ul>
               </div>
@@ -549,10 +575,10 @@ function App() {
                 <h3>📅 Booking Summary</h3>
                 {isRecurring && recurringData ? (
                   <>
-                    <p><strong>Booking Type:</strong> Weekly Recurring (Next 4 {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })}s)</p>
+                    <p><strong>Booking Type:</strong> Weekly Recurring (Next 4 {getWeekday(selectedDate)}s)</p>
                     <p><strong>Total Sessions:</strong> {recurringData.selectedDates?.length || 0}</p>
                     <p><strong>Dates:</strong> {recurringData.selectedDates?.map(date => 
-                      new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      formatShortDate(date)
                     ).join(', ')}</p>
                     <p><strong>Time (all sessions):</strong> {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)}</p>
                     <p><strong>Duration per session:</strong> {duration} hour{duration > 1 ? 's' : ''}</p>
@@ -662,10 +688,10 @@ function App() {
                 
                 {isRecurring && recurringData ? (
                   <>
-                    <p><strong>Booking Type:</strong> Weekly Recurring (Next 4 {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long' })}s)</p>
+                    <p><strong>Booking Type:</strong> Weekly Recurring (Next 4 {getWeekday(selectedDate)}s)</p>
                     <p><strong>Total Sessions:</strong> {recurringData.selectedDates?.length || 0}</p>
                     <p><strong>Dates:</strong> {recurringData.selectedDates?.map(date => 
-                      new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      formatShortDate(date)
                     ).join(', ')}</p>
                     <p><strong>Time (all sessions):</strong> {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)}</p>
                     <p><strong>Duration per session:</strong> {duration} hour{duration > 1 ? 's' : ''}</p>
