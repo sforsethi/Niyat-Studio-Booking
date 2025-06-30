@@ -92,7 +92,7 @@ const RecurringBooking: React.FC<RecurringBookingProps> = ({
   };
 
   const recurringDates = generateRecurringDates();
-  const totalCost = recurringDates.length * duration * 950;
+  const totalCost = recurringDates.length * duration * (recurringDates.length >= 4 ? 999 : 1150);
 
   return (
     <div className="step-content">

@@ -597,7 +597,7 @@ function App() {
                   <button type="submit" className="submit-button">
                     {isRecurring && recurringData ? 
                       `Confirm Booking - Pay ₹${recurringData.finalPrice?.toLocaleString()}` :
-                      `Confirm Booking - Pay ₹${duration * 950}`
+                      `Confirm Booking - Pay ₹${duration * 1150}`
                     }
                   </button>
                 </div>
