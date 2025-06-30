@@ -165,6 +165,47 @@ app.post('/api/bookings', async (req, res) => {
 
     const totalAmount = duration * 1150; // ₹1150 per hour
 
+    // Check for double booking conflicts
+    const startHour = parseInt(startTime.split(':')[0]);
+    const endHour = startHour + duration;
+    
+    // Check for existing bookings that would conflict
+    const checkConflict = new Promise((resolve, reject) => {
+      db.all(
+        'SELECT startTime, duration FROM bookings WHERE date = ? AND status = "confirmed"',
+        [date],
+        (err, existingBookings) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          
+          const hasConflict = existingBookings.some(booking => {
+            const existingStart = parseInt(booking.startTime.split(':')[0]);
+            const existingEnd = existingStart + booking.duration;
+            
+            // Check if new booking overlaps with existing booking
+            return (startHour < existingEnd && endHour > existingStart);
+          });
+          
+          resolve(hasConflict);
+        }
+      );
+    });
+
+    try {
+      const hasConflict = await checkConflict;
+      if (hasConflict) {
+        return res.status(409).json({ 
+          success: false,
+          error: 'Time slot conflict detected. This time is already booked. Please select a different time.',
+          conflictDetails: `${startTime} - ${endHour}:00 on ${date}`
+        });
+      }
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to check booking conflicts' });
+    }
+
     // Verify payment (temporarily bypass for testing)
     // Accept temporary payment IDs for testing purposes
     if (!razorpayPaymentId) {
