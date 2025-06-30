@@ -77,8 +77,43 @@ function App() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Show success message and move to confirmation step
-    setStep(5);
+    // Directly create booking without payment modal
+    createBookingDirectly();
+  };
+
+  const createBookingDirectly = async () => {
+    try {
+      const response = await fetch('http://localhost:5002/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          date: selectedDate,
+          startTime: selectedTime,
+          duration: duration,
+          totalAmount: duration * 1150,
+          razorpayOrderId: 'temp_order_' + Date.now(),
+          razorpayPaymentId: 'temp_payment_' + Date.now(),
+          razorpaySignature: 'temp_signature',
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Booking confirmed successfully! (Payment bypassed for testing)');
+        setStep(5); // Move to confirmation step
+      } else {
+        alert('Booking failed. Please try again.');
+      }
+    } catch (error) {
+      alert('Booking failed. Please try again.');
+      console.error('Booking error:', error);
+    }
   };
 
   const formatTime = (time: string) => {

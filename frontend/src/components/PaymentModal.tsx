@@ -52,41 +52,35 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       setProcessing(true);
       setError('');
 
-      const order = await createRazorpayOrder();
+      // Temporarily bypass payment and create booking directly
+      const response = await fetch('http://localhost:5002/api/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...bookingData,
+          totalAmount,
+          razorpayOrderId: 'temp_order_' + Date.now(),
+          razorpayPaymentId: 'temp_payment_' + Date.now(),
+          razorpaySignature: 'temp_signature',
+        }),
+      });
 
-      const options = {
-        key: process.env.REACT_APP_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: 'Studio Booking System',
-        description: `Studio booking for ${bookingData.duration} hour${bookingData.duration > 1 ? 's' : ''}`,
-        order_id: order.id,
-        prefill: {
-          name: bookingData.name,
-          email: bookingData.email,
-          contact: bookingData.phone,
-        },
-        theme: {
-          color: '#3399cc',
-        },
-        handler: async (response: any) => {
-          try {
-            await confirmBooking(response, order.id);
-          } catch (error) {
-            setError('Payment successful but booking confirmation failed. Please contact support.');
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            setProcessing(false);
-          },
-        },
-      };
+      if (!response.ok) {
+        throw new Error('Failed to create booking');
+      }
 
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('Booking confirmed successfully! (Payment bypassed for testing)');
+        onSuccess();
+      } else {
+        throw new Error(result.message || 'Booking confirmation failed');
+      }
     } catch (error) {
-      setError('Failed to initiate payment. Please try again.');
+      setError('Failed to create booking. Please try again.');
       setProcessing(false);
     }
   };

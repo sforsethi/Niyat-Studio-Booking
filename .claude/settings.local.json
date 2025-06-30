@@ -11,7 +11,9 @@
       "Bash(open http://localhost:5173)",
       "Bash(grep:*)",
       "Bash(git push:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": []
   }
