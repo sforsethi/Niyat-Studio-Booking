@@ -165,8 +165,8 @@ app.post('/api/bookings', async (req, res) => {
 
     const totalAmount = duration * 1150; // ₹1150 per hour
 
-    // Verify payment (you should implement proper signature verification)
-    // For now, we'll assume payment is verified if payment ID is provided
+    // Verify payment (temporarily bypass for testing)
+    // Accept temporary payment IDs for testing purposes
     if (!razorpayPaymentId) {
       return res.status(400).json({ error: 'Payment verification failed' });
     }
