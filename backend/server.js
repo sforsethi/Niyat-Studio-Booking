@@ -163,7 +163,7 @@ app.post('/api/bookings', async (req, res) => {
       razorpaySignature
     } = req.body;
 
-    const totalAmount = duration * 950; // ₹950 per hour
+    const totalAmount = duration * 1150; // ₹1150 per hour
 
     // Verify payment (you should implement proper signature verification)
     // For now, we'll assume payment is verified if payment ID is provided

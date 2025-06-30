@@ -13,7 +13,7 @@ A comprehensive studio booking management system with **Razorpay payment integra
 💳 **Payment Integration**
 - Secure payments via Razorpay
 - Automatic payment verification
-- ₹950 per hour pricing
+- ₹1150 per hour pricing (₹999 for 4+ day recurring bookings)
 
 📅 **Calendar Integration**
 - Google Calendar API integration

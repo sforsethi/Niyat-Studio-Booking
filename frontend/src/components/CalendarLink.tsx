@@ -24,7 +24,7 @@ const CalendarLink: React.FC<CalendarLinkProps> = ({ name, email, date, startTim
       action: 'TEMPLATE',
       text: `Studio Booking - ${name}`,
       dates: `${startFormatted}/${endFormatted}`,
-      details: `Studio booking confirmation for ${name} (${email}). Duration: ${duration} hours. Total: ₹${duration * 950}`,
+      details: `Studio booking confirmation for ${name} (${email}). Duration: ${duration} hours. Total: ₹${duration * 1150}`,
       location: 'Studio Location', // You can update this with actual address
     };
     
@@ -47,7 +47,7 @@ const CalendarLink: React.FC<CalendarLinkProps> = ({ name, email, date, startTim
       action: 'TEMPLATE',
       text: `Studio Booking - ${name}`,
       dates: `${startFormatted}/${endFormatted}`,
-      details: `Studio booking confirmation for ${name} (${email}). Duration: ${duration} hours. Total: ₹${duration * 950}`,
+      details: `Studio booking confirmation for ${name} (${email}). Duration: ${duration} hours. Total: ₹${duration * 1150}`,
       location: 'Studio Location',
     };
     
@@ -59,7 +59,7 @@ URL:${window.location.href}
 DTSTART:${startFormatted}
 DTEND:${endFormatted}
 SUMMARY:Studio Booking - ${name}
-DESCRIPTION:Studio booking confirmation for ${name} (${email}). Duration: ${duration} hours. Total: ₹${duration * 950}
+DESCRIPTION:Studio booking confirmation for ${name} (${email}). Duration: ${duration} hours. Total: ₹${duration * 1150}
 LOCATION:Studio Location
 END:VEVENT
 END:VCALENDAR`;

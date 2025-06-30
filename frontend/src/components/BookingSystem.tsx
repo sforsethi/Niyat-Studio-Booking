@@ -52,7 +52,7 @@ const BookingSystem: React.FC = () => {
     setStep(1);
   };
 
-  const totalAmount = duration * 950;
+  const totalAmount = duration * 1150;
 
   return (
     <div className="booking-system">
@@ -90,7 +90,7 @@ const BookingSystem: React.FC = () => {
             >
               {[1, 2, 3, 4, 5, 6, 7, 8].map(hours => (
                 <option key={hours} value={hours}>
-                  {hours} hour{hours > 1 ? 's' : ''} - ₹{hours * 950}
+                  {hours} hour{hours > 1 ? 's' : ''} - ₹{hours * 1150}
                 </option>
               ))}
             </select>

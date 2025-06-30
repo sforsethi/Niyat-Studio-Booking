@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(curl:*)",
+      "Bash(open http://localhost:5174)",
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(PORT=3000 npm run dev)",
+      "Bash(pkill:*)",
+      "Bash(open http://localhost:5173)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}

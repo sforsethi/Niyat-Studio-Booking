@@ -20,7 +20,7 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ date, duration, onTimeSelect }) =
       setLoading(true);
       setError('');
       
-      const response = await fetch(`http://localhost:5001/api/availability/${date}`);
+      const response = await fetch(`http://localhost:5002/api/availability/${date}`);
       if (!response.ok) {
         throw new Error('Failed to fetch availability');
       }
@@ -117,7 +117,7 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ date, duration, onTimeSelect }) =
               {duration} hour{duration > 1 ? 's' : ''}
             </div>
             <div className="slot-price">
-              ₹{duration * 950}
+              ₹{duration * 1150}
             </div>
           </button>
         ))}

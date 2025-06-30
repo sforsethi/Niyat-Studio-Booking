@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import Calendar from './components/Calendar';
 import CalendarLink from './components/CalendarLink';
 import AdminPanel from './components/AdminPanel';
+import ContactUs from './components/ContactUs';
+import TermsAndConditions from './components/TermsAndConditions';
+import RefundPolicy from './components/RefundPolicy';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import './App.css';
 
 // RecurringData type definition with discount support
@@ -17,6 +21,10 @@ interface RecurringData {
 
 function App() {
   const [showAdmin, setShowAdmin] = useState<boolean>(false);
+  const [showContact, setShowContact] = useState<boolean>(false);
+  const [showTerms, setShowTerms] = useState<boolean>(false);
+  const [showRefund, setShowRefund] = useState<boolean>(false);
+  const [showPrivacy, setShowPrivacy] = useState<boolean>(false);
   const [step, setStep] = useState<number>(0); // Start at 0 for booking type selection
   const [bookingType, setBookingType] = useState<'onetime' | 'recurring' | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -86,35 +94,78 @@ function App() {
     return <AdminPanel onBack={() => setShowAdmin(false)} />;
   }
 
+  // Show contact us modal
+  if (showContact) {
+    return <ContactUs onClose={() => setShowContact(false)} />;
+  }
+
+  // Show terms and conditions modal
+  if (showTerms) {
+    return <TermsAndConditions onClose={() => setShowTerms(false)} />;
+  }
+
+  // Show refund policy modal
+  if (showRefund) {
+    return <RefundPolicy onClose={() => setShowRefund(false)} />;
+  }
+
+  // Show privacy policy modal
+  if (showPrivacy) {
+    return <PrivacyPolicy onClose={() => setShowPrivacy(false)} />;
+  }
+
   return (
     <div className="App">
       <header className="App-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1200px' }}>
           <div>
-            <h1>Studio Booking System</h1>
-            <p>Book your studio time at ₹950 per hour</p>
+            <h1>Niyat Studios</h1>
+            <p>Book your studio time at ₹1150 per hour</p>
           </div>
-          <button
-            onClick={() => setShowAdmin(true)}
-            style={{
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 'bold'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = '#5a6268';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = '#6c757d';
-            }}
-          >
-            📊 Admin Panel
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setShowContact(true)}
+              style={{
+                background: '#007bff',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = '#0056b3';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = '#007bff';
+              }}
+            >
+              📞 Contact Us
+            </button>
+            <button
+              onClick={() => setShowAdmin(true)}
+              style={{
+                background: '#6c757d',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = '#5a6268';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = '#6c757d';
+              }}
+            >
+              📊 Admin Panel
+            </button>
+          </div>
         </div>
       </header>
       
@@ -252,7 +303,7 @@ function App() {
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8].map(hours => (
                     <option key={hours} value={hours} style={{ color: '#333' }}>
-                      {hours} hour{hours > 1 ? 's' : ''} - ₹{hours * 950}
+                      {hours} hour{hours > 1 ? 's' : ''} - ₹{hours * 1150}
                     </option>
                   ))}
                 </select>
@@ -272,7 +323,7 @@ function App() {
                       {duration} hour{duration > 1 ? 's' : ''}
                     </div>
                     <div className="slot-price">
-                      ₹{duration * 950}
+                      ₹{duration * 1150}
                     </div>
                   </button>
                 ))}
@@ -294,7 +345,7 @@ function App() {
                 <p><strong>Selected Day:</strong> {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
                 <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)}</p>
                 <p><strong>Duration:</strong> {duration} hour{duration > 1 ? 's' : ''}</p>
-                <p><strong>Cost per session:</strong> ₹{duration * 950}</p>
+                <p><strong>Cost per session:</strong> ₹{duration * 1150}</p>
               </div>
 
               <div style={{ 
@@ -322,7 +373,7 @@ function App() {
                     }
                     
                     const sessionsCount = 4; // Always 4 sessions for next 4 weeks
-                    const regularPrice = sessionsCount * duration * 950;
+                    const regularPrice = sessionsCount * duration * (sessionsCount >= 4 ? 999 : 1150);
                     const hasDiscount = true; // Always 4 sessions, so always discount
                     const discountedPrice = Math.round(regularPrice * 0.8);
                     const savings = regularPrice - discountedPrice;
@@ -500,7 +551,7 @@ function App() {
                     <p><strong>Date:</strong> {selectedDate}</p>
                     <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)}</p>
                     <p><strong>Duration:</strong> {duration} hour{duration > 1 ? 's' : ''}</p>
-                    <p><strong>Total Amount:</strong> ₹{duration * 950}</p>
+                    <p><strong>Total Amount:</strong> ₹{duration * 1150}</p>
                   </>
                 )}
               </div>
@@ -610,7 +661,7 @@ function App() {
                     <p><strong>Date:</strong> {selectedDate}</p>
                     <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)}</p>
                     <p><strong>Duration:</strong> {duration} hour{duration > 1 ? 's' : ''}</p>
-                    <p><strong>Total Paid:</strong> ₹{duration * 950}</p>
+                    <p><strong>Total Paid:</strong> ₹{duration * 1150}</p>
                   </>
                 )}
               </div>
@@ -650,12 +701,129 @@ function App() {
                 color: '#155724'
               }}>
                 <p><strong>📧 Confirmation sent!</strong> You will receive an email confirmation shortly.</p>
-                <p><strong>📞 Questions?</strong> Contact us at studio@example.com or call (555) 123-4567</p>
+                <p><strong>📞 Questions?</strong> Contact us at niyatstudios@gmail.com or call +91 8882379649</p>
               </div>
             </div>
           )}
         </div>
       </main>
+      
+      <footer style={{
+        background: '#343a40',
+        color: 'white',
+        padding: '40px 20px',
+        textAlign: 'center',
+        marginTop: '50px'
+      }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '30px',
+            marginBottom: '30px'
+          }}>
+            <div>
+              <h3 style={{ marginBottom: '15px', color: '#fff' }}>🎵 Niyat Studios</h3>
+              <p style={{ margin: '0', color: '#adb5bd', lineHeight: '1.6' }}>
+                A complete solution studio for<br />
+                🌺 Influencer shoots<br />
+                🌺 Dance & Fitness classes<br />
+                🌺 Videography<br />
+                🌺 And much more
+              </p>
+            </div>
+            
+            <div>
+              <h4 style={{ marginBottom: '15px', color: '#fff' }}>📞 Contact Info</h4>
+              <div style={{ color: '#adb5bd', lineHeight: '1.8' }}>
+                <p style={{ margin: '5px 0' }}>
+                  <strong>Phone:</strong> <a href="tel:+918882379649" style={{ color: '#17a2b8', textDecoration: 'none' }}>+91 8882379649</a>
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                  <strong>Email:</strong> <a href="mailto:niyatstudios@gmail.com" style={{ color: '#17a2b8', textDecoration: 'none' }}>niyatstudios@gmail.com</a>
+                </p>
+              </div>
+            </div>
+            
+            <div>
+              <h4 style={{ marginBottom: '15px', color: '#fff' }}>📍 Studio Address</h4>
+              <p style={{ margin: '0', color: '#adb5bd', lineHeight: '1.6' }}>
+                H-1462, Ground Floor<br />
+                Chittaranjan Park<br />
+                New Delhi - 110019
+              </p>
+              <a
+                href="https://maps.app.goo.gl/jCD5mJ9QvnsPfr9V8"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: '#17a2b8',
+                  textDecoration: 'none',
+                  fontSize: '14px',
+                  marginTop: '10px',
+                  display: 'inline-block'
+                }}
+              >
+                📍 View on Maps
+              </a>
+            </div>
+          </div>
+          
+          <div style={{
+            borderTop: '1px solid #495057',
+            paddingTop: '20px',
+            color: '#adb5bd',
+            fontSize: '14px'
+          }}>
+            <p style={{ margin: '0 0 10px 0' }}>
+              © 2024 Niyat Studios. All rights reserved. | Professional Recording Studio Services
+            </p>
+            <p style={{ margin: '0' }}>
+              <button
+                onClick={() => setShowTerms(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#17a2b8',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Terms & Conditions
+              </button>
+              {' | '}
+              <button
+                onClick={() => setShowRefund(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#17a2b8',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Refund Policy
+              </button>
+              {' | '}
+              <button
+                onClick={() => setShowPrivacy(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#17a2b8',
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Privacy Policy
+              </button>
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
