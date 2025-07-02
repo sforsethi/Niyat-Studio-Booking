@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Calendar from './components/Calendar';
 import CalendarLink from './components/CalendarLink';
 import AdminPanel from './components/AdminPanel';
+import AdminLogin from './components/AdminLogin';
 import ContactUs from './components/ContactUs';
 import TermsAndConditions from './components/TermsAndConditions';
 import RefundPolicy from './components/RefundPolicy';
@@ -43,6 +44,8 @@ function App() {
   const [couponError, setCouponError] = useState<string>('');
   const [validatingCoupon, setValidatingCoupon] = useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+  const [showAdminLogin, setShowAdminLogin] = useState<boolean>(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(false);
 
   // Available time slots (professional studio hours)
   const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
@@ -144,6 +147,25 @@ function App() {
     setStep(5); // Move to confirmation step
   };
 
+  const handleAdminLoginSuccess = () => {
+    setIsAdminAuthenticated(true);
+    setShowAdminLogin(false);
+    setShowAdmin(true);
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminAuthenticated(false);
+    setShowAdmin(false);
+  };
+
+  const handleAdminButtonClick = () => {
+    if (isAdminAuthenticated) {
+      setShowAdmin(true);
+    } else {
+      setShowAdminLogin(true);
+    }
+  };
+
   const formatTime = (time: string) => {
     const [hours] = time.split(':');
     const hour = parseInt(hours);
@@ -171,9 +193,9 @@ function App() {
     return date.toLocaleDateString('en-US', { weekday: 'long' });
   };
 
-  // Show admin panel
-  if (showAdmin) {
-    return <AdminPanel onBack={() => setShowAdmin(false)} />;
+  // Show admin panel (only if authenticated)
+  if (showAdmin && isAdminAuthenticated) {
+    return <AdminPanel onBack={handleAdminLogout} />;
   }
 
   // Show contact us modal
@@ -227,7 +249,7 @@ function App() {
               📞 Contact Us
             </button>
             <button
-              onClick={() => setShowAdmin(true)}
+              onClick={handleAdminButtonClick}
               style={{
                 background: '#6c757d',
                 color: 'white',
@@ -1046,6 +1068,14 @@ function App() {
           totalAmount={couponData ? couponData.finalAmount : duration * 1150}
           onSuccess={handlePaymentSuccess}
           onClose={() => setShowPaymentModal(false)}
+        />
+      )}
+
+      {/* Admin Login Modal */}
+      {showAdminLogin && (
+        <AdminLogin
+          onLoginSuccess={handleAdminLoginSuccess}
+          onClose={() => setShowAdminLogin(false)}
         />
       )}
     </div>
