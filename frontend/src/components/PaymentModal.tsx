@@ -52,35 +52,48 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       setProcessing(true);
       setError('');
 
-      // Temporarily bypass payment and create booking directly
-      const response = await fetch('http://localhost:5002/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...bookingData,
-          totalAmount,
-          razorpayOrderId: 'temp_order_' + Date.now(),
-          razorpayPaymentId: 'temp_payment_' + Date.now(),
-          razorpaySignature: 'temp_signature',
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create booking');
-      }
-
-      const result = await response.json();
+      // Create Razorpay order
+      const orderData = await createRazorpayOrder();
       
-      if (result.success) {
-        alert('Booking confirmed successfully! (Payment bypassed for testing)');
-        onSuccess();
+      const options = {
+        key: 'rzp_live_LoswuqskrUoMJx',
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: 'Studio Booking',
+        description: `Booking for ${bookingData.date} at ${bookingData.startTime}`,
+        order_id: orderData.id,
+        handler: async (response: any) => {
+          try {
+            await confirmBooking(response, orderData.id);
+          } catch (error) {
+            setError('Payment successful but booking confirmation failed. Please contact support.');
+            console.error('Booking confirmation error:', error);
+          }
+        },
+        prefill: {
+          name: bookingData.name,
+          email: bookingData.email,
+          contact: bookingData.phone,
+        },
+        theme: {
+          color: '#3399cc',
+        },
+        modal: {
+          ondismiss: () => {
+            setProcessing(false);
+            setError('Payment cancelled by user');
+          }
+        }
+      };
+
+      if (window.Razorpay) {
+        const rzp = new window.Razorpay(options);
+        rzp.open();
       } else {
-        throw new Error(result.message || 'Booking confirmation failed');
+        throw new Error('Razorpay SDK not loaded');
       }
     } catch (error) {
-      setError('Failed to create booking. Please try again.');
+      setError('Failed to initiate payment. Please try again.');
       setProcessing(false);
     }
   };
@@ -94,6 +107,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         },
         body: JSON.stringify({
           ...bookingData,
+          originalAmount: bookingData.duration * 1150,
+          discountAmount: (bookingData.duration * 1150) - totalAmount,
+          totalAmount,
+          couponCode: totalAmount < (bookingData.duration * 1150) ? 'APPLIED' : null,
           razorpayOrderId: orderId,
           razorpayPaymentId: paymentResponse.razorpay_payment_id,
           razorpaySignature: paymentResponse.razorpay_signature,

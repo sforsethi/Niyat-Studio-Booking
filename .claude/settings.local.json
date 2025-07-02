@@ -13,7 +13,12 @@
       "Bash(git push:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(npm start)",
+      "Bash(PORT=5002 node server.js)",
+      "Bash(node:*)",
+      "Bash(kill:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

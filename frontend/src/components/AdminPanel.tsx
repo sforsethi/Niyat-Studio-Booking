@@ -9,6 +9,9 @@ interface Booking {
   startTime: string;
   duration: number;
   totalAmount: number;
+  originalAmount?: number;
+  discountAmount?: number;
+  couponCode?: string;
   status: string;
   paymentId: string | null;
   bookedAt: string;
@@ -309,8 +312,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                       {formatTime(booking.startTime)} • {booking.duration}h
                     </div>
                   </td>
-                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#28a745' }}>
-                    ₹{booking.totalAmount.toLocaleString()}
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#28a745' }}>
+                      ₹{booking.totalAmount.toLocaleString()}
+                    </div>
+                    {booking.discountAmount && booking.discountAmount > 0 && (
+                      <div style={{ fontSize: '12px', color: '#666' }}>
+                        <span style={{ textDecoration: 'line-through' }}>₹{booking.originalAmount?.toLocaleString()}</span>
+                        <span style={{ color: '#dc3545', fontWeight: 'bold' }}> -₹{booking.discountAmount}</span>
+                        {booking.couponCode && (
+                          <div style={{ color: '#007bff', fontSize: '11px' }}>
+                            🎟️ {booking.couponCode}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '12px' }}>
                     <span style={{

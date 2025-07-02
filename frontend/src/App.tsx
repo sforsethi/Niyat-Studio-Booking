@@ -6,6 +6,7 @@ import ContactUs from './components/ContactUs';
 import TermsAndConditions from './components/TermsAndConditions';
 import RefundPolicy from './components/RefundPolicy';
 import PrivacyPolicy from './components/PrivacyPolicy';
+import PaymentModal from './components/PaymentModal';
 import './App.css';
 
 // RecurringData type definition with discount support
@@ -37,6 +38,11 @@ function App() {
   });
   const [isRecurring, setIsRecurring] = useState<boolean>(false);
   const [recurringData, setRecurringData] = useState<RecurringData | null>(null);
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [couponData, setCouponData] = useState<any>(null);
+  const [couponError, setCouponError] = useState<string>('');
+  const [validatingCoupon, setValidatingCoupon] = useState<boolean>(false);
+  const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
 
   // Available time slots (professional studio hours)
   const timeSlots = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
@@ -74,52 +80,68 @@ function App() {
     setStep(4); // Go to booking form
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Directly create booking without payment modal
-    createBookingDirectly();
-  };
+  const validateCoupon = async (code: string) => {
+    if (!code.trim()) {
+      setCouponData(null);
+      setCouponError('');
+      return;
+    }
 
-  const createBookingDirectly = async () => {
+    setValidatingCoupon(true);
+    setCouponError('');
+
     try {
-      const response = await fetch('http://localhost:5002/api/bookings', {
+      const amount = duration * 1150;
+      const response = await fetch('http://localhost:5002/api/validate-coupon', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          date: selectedDate,
-          startTime: selectedTime,
-          duration: duration,
-          totalAmount: duration * 1150,
-          razorpayOrderId: 'temp_order_' + Date.now(),
-          razorpayPaymentId: 'temp_payment_' + Date.now(),
-          razorpaySignature: 'temp_signature',
-        }),
+        body: JSON.stringify({ code: code.trim(), amount }),
       });
 
-      const result = await response.json();
+      const data = await response.json();
       
-      if (result.success) {
-        alert('Booking confirmed successfully! (Payment bypassed for testing)');
-        setStep(5); // Move to confirmation step
+      if (data.valid) {
+        setCouponData(data);
+        setCouponError('');
       } else {
-        if (response.status === 409) {
-          // Conflict error - double booking detected
-          alert(`❌ Booking Conflict!\n\n${result.error}\n\nTime: ${result.conflictDetails}\n\nPlease select a different time slot.`);
-          setStep(2); // Go back to time selection
-        } else {
-          alert('Booking failed. Please try again.');
-        }
+        setCouponData(null);
+        setCouponError(data.error || 'Invalid coupon code');
       }
     } catch (error) {
-      alert('Booking failed. Please try again.');
-      console.error('Booking error:', error);
+      setCouponError('Failed to validate coupon');
+      setCouponData(null);
+    } finally {
+      setValidatingCoupon(false);
     }
+  };
+
+  const handleCouponChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase();
+    setCouponCode(value);
+  };
+
+  const applyCoupon = () => {
+    validateCoupon(couponCode);
+  };
+
+  const removeCoupon = () => {
+    setCouponCode('');
+    setCouponData(null);
+    setCouponError('');
+  };
+
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Show payment modal for proper Razorpay integration
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setShowPaymentModal(false);
+    setStep(5); // Move to confirmation step
   };
 
   const formatTime = (time: string) => {
@@ -609,10 +631,33 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <p><strong>Date:</strong> {selectedDate}</p>
+                    <p><strong>Date:</strong> {formatDateDisplay(selectedDate)}</p>
                     <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)}</p>
                     <p><strong>Duration:</strong> {duration} hour{duration > 1 ? 's' : ''}</p>
-                    <p><strong>Total Amount:</strong> ₹{duration * 1150}</p>
+                    
+                    {couponData ? (
+                      <div style={{ padding: '15px', background: '#e8f5e8', borderRadius: '8px', border: '1px solid #28a745' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#666' }}>
+                          <span>Original Price:</span>
+                          <span style={{ textDecoration: 'line-through' }}>₹{couponData.originalAmount.toLocaleString()}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', color: '#28a745' }}>
+                          <span>Discount ({couponData.coupon.code}):</span>
+                          <span>-₹{couponData.discountAmount.toLocaleString()}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold', color: '#28a745', marginTop: '8px' }}>
+                          <span>Total Amount:</span>
+                          <span>₹{couponData.finalAmount.toLocaleString()}</span>
+                        </div>
+                        <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#28a745' }}>
+                          💰 You saved ₹{couponData.discountAmount.toLocaleString()} with coupon {couponData.coupon.code}!
+                        </p>
+                      </div>
+                    ) : (
+                      <p style={{fontSize: '18px', fontWeight: 'bold', color: '#28a745'}}>
+                        <strong>Total Amount:</strong> ₹{(duration * 1150).toLocaleString()}
+                      </p>
+                    )}
                   </>
                 )}
               </div>
@@ -654,11 +699,112 @@ function App() {
                   />
                 </div>
 
+                {/* Coupon Code Section */}
+                <div className="form-group coupon-section">
+                  <label htmlFor="coupon" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    🎟️ Have a Coupon Code?
+                    <span style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>(Optional)</span>
+                  </label>
+                  
+                  {!couponData ? (
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                      <div style={{ flex: '1' }}>
+                        <input
+                          type="text"
+                          id="coupon"
+                          value={couponCode}
+                          onChange={handleCouponChange}
+                          placeholder="Enter coupon code (e.g., GAURAV-NIYAT)"
+                          style={{
+                            textTransform: 'uppercase',
+                            letterSpacing: '1px'
+                          }}
+                        />
+                        {couponError && (
+                          <p style={{ 
+                            color: '#dc3545', 
+                            fontSize: '12px', 
+                            margin: '5px 0 0 0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            ❌ {couponError}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={applyCoupon}
+                        disabled={!couponCode.trim() || validatingCoupon}
+                        style={{
+                          background: validatingCoupon ? '#6c757d' : '#007bff',
+                          color: 'white',
+                          border: 'none',
+                          padding: '10px 16px',
+                          borderRadius: '5px',
+                          cursor: validatingCoupon || !couponCode.trim() ? 'not-allowed' : 'pointer',
+                          fontSize: '14px',
+                          whiteSpace: 'nowrap',
+                          minWidth: '80px'
+                        }}
+                      >
+                        {validatingCoupon ? '...' : 'Apply'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{
+                      background: '#d4edda',
+                      border: '1px solid #c3e6cb',
+                      borderRadius: '5px',
+                      padding: '12px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <div style={{ color: '#155724', fontWeight: 'bold', fontSize: '14px' }}>
+                          ✅ Coupon Applied: {couponData.coupon.code}
+                        </div>
+                        <div style={{ color: '#155724', fontSize: '12px', marginTop: '2px' }}>
+                          {couponData.coupon.description}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={removeCoupon}
+                        style={{
+                          background: 'transparent',
+                          border: '1px solid #155724',
+                          color: '#155724',
+                          padding: '4px 8px',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: '#666', 
+                    marginTop: '8px',
+                    padding: '8px',
+                    background: '#f8f9fa',
+                    borderRadius: '4px'
+                  }}>
+                    💡 <strong>Available Coupon:</strong> GAURAV-NIYAT (18% off)
+                  </div>
+                </div>
+
                 <div className="form-actions">
                   <button type="submit" className="submit-button">
                     {isRecurring && recurringData ? 
                       `Confirm Booking - Pay ₹${recurringData.finalPrice?.toLocaleString()}` :
-                      `Confirm Booking - Pay ₹${duration * 1150}`
+                      `Confirm Booking - Pay ₹${couponData ? couponData.finalAmount.toLocaleString() : (duration * 1150).toLocaleString()}`
                     }
                   </button>
                 </div>
@@ -885,6 +1031,23 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Payment Modal */}
+      {showPaymentModal && (
+        <PaymentModal
+          bookingData={{
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            date: selectedDate,
+            startTime: selectedTime,
+            duration: duration
+          }}
+          totalAmount={couponData ? couponData.finalAmount : duration * 1150}
+          onSuccess={handlePaymentSuccess}
+          onClose={() => setShowPaymentModal(false)}
+        />
+      )}
     </div>
   );
 }
