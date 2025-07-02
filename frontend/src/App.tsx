@@ -714,7 +714,7 @@ function App() {
                           id="coupon"
                           value={couponCode}
                           onChange={handleCouponChange}
-                          placeholder="Enter coupon code (e.g., GAURAV-NIYAT)"
+                          placeholder="Enter coupon code"
                           style={{
                             textTransform: 'uppercase',
                             letterSpacing: '1px'
@@ -796,7 +796,7 @@ function App() {
                     background: '#f8f9fa',
                     borderRadius: '4px'
                   }}>
-                    💡 <strong>Available Coupon:</strong> GAURAV-NIYAT (18% off)
+                    💡 <strong>Info:</strong> Apply coupon codes here for discounts (if available)
                   </div>
                 </div>
 
