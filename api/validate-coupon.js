@@ -1,6 +1,6 @@
-const { db, initializeDB } = require('./_db');
+import { db, initializeDB } from './_db.js';
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -95,4 +95,4 @@ module.exports = async (req, res) => {
     console.error('Coupon validation error:', error);
     res.status(500).json({ error: 'Server error' });
   }
-};
+}

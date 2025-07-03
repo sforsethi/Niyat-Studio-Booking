@@ -1,7 +1,8 @@
-const sqlite3 = require('sqlite3').verbose();
+import sqlite3 from 'sqlite3';
 
-// Initialize SQLite database
-const db = new sqlite3.Database('/tmp/bookings.db');
+// Initialize SQLite database  
+const sqlite = sqlite3.verbose();
+const db = new sqlite.Database('/tmp/bookings.db');
 
 // Initialize database
 const initializeDB = () => {
@@ -59,4 +60,4 @@ const initializeDB = () => {
   });
 };
 
-module.exports = { db, initializeDB };
+export { db, initializeDB };
