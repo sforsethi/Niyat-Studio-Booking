@@ -91,6 +91,21 @@ app.get('/', (req, res) => {
   res.json({ message: 'Studio Booking API is running!' });
 });
 
+// Debug route to check coupons
+app.get('/debug/coupons', (req, res) => {
+  db.all("SELECT * FROM coupons", (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json({ 
+      message: 'Debug: All coupons in database',
+      coupons: rows,
+      count: rows.length 
+    });
+  });
+});
+
 // Admin route to view all coupons
 app.get('/admin/coupons', (req, res) => {
   db.all("SELECT * FROM coupons ORDER BY createdAt DESC", (err, rows) => {
