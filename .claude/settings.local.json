@@ -25,7 +25,10 @@
       "Bash(npx @railway/cli:*)",
       "Bash(find:*)",
       "Bash(vercel:*)",
-      "Bash(sudo npm install -g vercel)"
+      "Bash(sudo npm install -g vercel)",
+      "WebFetch(domain:niyat-studio-booking.vercel.app)",
+      "Bash(rm:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }
