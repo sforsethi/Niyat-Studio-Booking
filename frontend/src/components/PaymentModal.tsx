@@ -25,7 +25,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const createRazorpayOrder = async () => {
     try {
-      const response = await fetch('http://localhost:5002/api/create-order', {
+      const response = await fetch('/api/create-order', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const confirmBooking = async (paymentResponse: any, orderId: string) => {
     try {
-      const response = await fetch('http://localhost:5002/api/bookings', {
+      const response = await fetch('/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

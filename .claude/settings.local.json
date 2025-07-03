@@ -18,7 +18,14 @@
       "Bash(PORT=5002 node server.js)",
       "Bash(node:*)",
       "Bash(kill:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(true)",
+      "Bash(npm install:*)",
+      "Bash(sudo npm install -g @railway/cli)",
+      "Bash(npx @railway/cli:*)",
+      "Bash(find:*)",
+      "Bash(vercel:*)",
+      "Bash(sudo npm install -g vercel)"
     ],
     "deny": []
   }
