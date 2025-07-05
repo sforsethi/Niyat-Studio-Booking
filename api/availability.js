@@ -12,9 +12,12 @@ export default function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // For now, return empty bookings array (production would connect to real database)
-  res.json({
-    total: 0,
-    bookings: []
-  });
+  // Generate available slots (9 AM to 9 PM, 1-hour slots)
+  const availableSlots = [];
+  for (let hour = 9; hour <= 20; hour++) {
+    const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
+    availableSlots.push(timeSlot);
+  }
+
+  res.json({ availableSlots });
 }

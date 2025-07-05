@@ -61,12 +61,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       }
 
       const data = await response.json();
+      console.log('Coupon validation response:', data);
 
       if (data.valid) {
+        console.log('Coupon is valid, applying discount:', data.discountAmount);
         setCouponDiscount(data.discountAmount);
         setAppliedCoupon(couponCode.trim());
         setCouponError('');
+        console.log('Coupon applied successfully');
       } else {
+        console.log('Coupon is invalid:', data.error);
         setCouponError(data.error || 'Invalid coupon code');
         setCouponDiscount(0);
         setAppliedCoupon('');

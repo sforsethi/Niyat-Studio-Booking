@@ -95,7 +95,7 @@ function App() {
 
     try {
       const amount = duration * 1150;
-      const response = await fetch('/api/simple-coupon', {
+      const response = await fetch('/api/validate-coupon', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

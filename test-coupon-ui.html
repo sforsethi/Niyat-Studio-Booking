@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Coupon Validation Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-container { border: 1px solid #ddd; padding: 20px; margin: 10px 0; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        input, button { padding: 8px; margin: 5px; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        #log { background: #f8f9fa; padding: 10px; margin: 10px 0; height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🎟️ Coupon Validation Test - Live UI</h1>
+    
+    <div class="test-container">
+        <h3>Manual Test</h3>
+        <input type="text" id="couponCode" placeholder="Enter coupon code" value="STUDIO15">
+        <input type="number" id="amount" placeholder="Amount" value="2300">
+        <button onclick="testCoupon()">Validate Coupon</button>
+        <div id="result"></div>
+    </div>
+
+    <div class="test-container">
+        <h3>Automated Tests</h3>
+        <button onclick="runAllTests()">Run All Coupon Tests</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-container">
+        <h3>Network Logs</h3>
+        <pre id="log"></pre>
+    </div>
+
+    <script>
+        function log(message) {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        async function testCoupon() {
+            const code = document.getElementById('couponCode').value;
+            const amount = document.getElementById('amount').value;
+            const resultDiv = document.getElementById('result');
+            
+            log(`Testing coupon: ${code} with amount: ₹${amount}`);
+            
+            try {
+                log('Making fetch request to /api/validate-coupon...');
+                
+                const response = await fetch('/api/validate-coupon', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code: code.trim(),
+                        amount: parseInt(amount)
+                    }),
+                });
+
+                log(`Response status: ${response.status} ${response.statusText}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                log(`Response data: ${JSON.stringify(data, null, 2)}`);
+
+                if (data.valid) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ Coupon valid!<br>
+                            Original: ₹${data.originalAmount}<br>
+                            Discount: ₹${data.discountAmount}<br>
+                            Final: ₹${data.finalAmount}
+                        </div>
+                    `;
+                    log(`SUCCESS: Coupon applied, final amount: ₹${data.finalAmount}`);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            ❌ ${data.error}
+                        </div>
+                    `;
+                    log(`REJECTED: ${data.error}`);
+                }
+            } catch (error) {
+                log(`ERROR: ${error.message}`);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        🚨 Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function runAllTests() {
+            const tests = [
+                { code: 'STUDIO15', amount: 2300 },
+                { code: 'DISCOUNT15', amount: 1150 },
+                { code: 'GAURAV-NIYAT', amount: 1000 },
+                { code: 'INVALID', amount: 2000 },
+                { code: 'STUDIO15', amount: 500 }
+            ];
+
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '<p>Running tests...</p>';
+            
+            let results = '<h4>Test Results:</h4>';
+            
+            for (const test of tests) {
+                log(`Auto-testing: ${test.code} with ₹${test.amount}`);
+                
+                try {
+                    const response = await fetch('/api/validate-coupon', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: test.code, amount: test.amount }),
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.valid) {
+                        results += `<div class="result success">✅ ${test.code}: Valid, saves ₹${data.discountAmount}</div>`;
+                    } else {
+                        results += `<div class="result error">❌ ${test.code}: ${data.error}</div>`;
+                    }
+                } catch (error) {
+                    results += `<div class="result error">🚨 ${test.code}: ${error.message}</div>`;
+                }
+            }
+            
+            resultsDiv.innerHTML = results;
+        }
+
+        // Test on page load
+        log('Page loaded - ready for testing');
+        log('Backend should be running on localhost:5001');
+        log('Frontend proxy should route /api/* to backend');
+    </script>
+</body>
+</html>
