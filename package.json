@@ -2,6 +2,9 @@
   "name": "studio-booking-system",
   "version": "1.0.0",
   "description": "Studio booking system with Razorpay and Google Calendar integration",
+  "scripts": {
+    "build": "echo 'No build needed for root' && exit 0"
+  },
   "dependencies": {
     "sqlite3": "^5.1.6"
   }
