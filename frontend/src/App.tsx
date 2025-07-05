@@ -95,6 +95,7 @@ function App() {
 
     try {
       const amount = duration * 1150;
+      // Fixed endpoint: validate-coupon (not simple-coupon)
       const response = await fetch('/api/validate-coupon', {
         method: 'POST',
         headers: {
