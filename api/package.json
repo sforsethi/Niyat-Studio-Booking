@@ -1,6 +1,0 @@
-{
-  "type": "module",
-  "dependencies": {
-    "sqlite3": "^5.1.6"
-  }
-}
