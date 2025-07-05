@@ -20,7 +20,7 @@ const TimeSlots: React.FC<TimeSlotsProps> = ({ date, duration, onTimeSelect }) =
       setLoading(true);
       setError('');
       
-      const response = await fetch(`/api/availability/${date}`);
+      const response = await fetch(`/api/availability-date?date=${date}`);
       if (!response.ok) {
         throw new Error('Failed to fetch availability');
       }

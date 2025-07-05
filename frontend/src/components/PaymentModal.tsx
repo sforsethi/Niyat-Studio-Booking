@@ -45,7 +45,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     setCouponError('');
 
     try {
-      const response = await fetch('/api/simple-coupon', {
+      const response = await fetch('/api/test-coupon', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,6 +55,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           amount: baseAmount
         }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       const data = await response.json();
 
@@ -67,8 +71,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         setCouponDiscount(0);
         setAppliedCoupon('');
       }
-    } catch (_error) {
-      setCouponError('Failed to validate coupon');
+    } catch (error) {
+      console.error('Coupon validation error:', error);
+      setCouponError(`Failed to validate coupon: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setCouponDiscount(0);
       setAppliedCoupon('');
     } finally {
@@ -262,7 +267,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           }}>
             <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>🎟️ Have a Coupon?</h4>
             <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0' }}>
-              Available coupons: STUDIO15 (15% off), DISCOUNT15 (15% off)
+              Available coupon: STUDIO15 (15% off, min ₹1000)
             </p>
             
             {!appliedCoupon ? (
