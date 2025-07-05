@@ -45,14 +45,16 @@ const initializeDB = () => {
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )`);
 
-      // Insert GAURAV-NIYAT coupon only
+      // Insert coupons
       db.run(`INSERT OR IGNORE INTO coupons (code, description, discountType, discountValue, minAmount, maxDiscount, usageLimit, validUntil) VALUES 
-        ('GAURAV-NIYAT', 'Special VIP discount for Gaurav', 'percentage', 18, 500, 1000, 50, '2025-12-31 23:59:59')`, function(err) {
+        ('GAURAV-NIYAT', 'Special VIP discount for Gaurav', 'percentage', 18, 500, 1000, 50, '2025-12-31 23:59:59'),
+        ('STUDIO15', '15% discount on studio bookings', 'percentage', 15, 1000, NULL, 100, '2025-12-31 23:59:59'),
+        ('DISCOUNT15', '15% discount on studio bookings', 'percentage', 15, 1000, NULL, 100, '2025-12-31 23:59:59')`, function(err) {
         if (err) {
-          console.error('Error inserting coupon:', err);
+          console.error('Error inserting coupons:', err);
           reject(err);
         } else {
-          console.log('Coupon GAURAV-NIYAT inserted successfully');
+          console.log('Coupons inserted successfully');
           resolve();
         }
       });

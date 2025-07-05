@@ -10,18 +10,78 @@ interface PaymentModalProps {
 
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: {
+      new (options: Record<string, unknown>): {
+        open: () => void;
+      };
+    };
   }
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({
   bookingData,
-  totalAmount,
+  totalAmount: _totalAmount,
   onSuccess,
   onClose
 }) => {
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [couponDiscount, setCouponDiscount] = useState<number>(0);
+  const [couponError, setCouponError] = useState<string>('');
+  const [appliedCoupon, setAppliedCoupon] = useState<string>('');
+  const [validatingCoupon, setValidatingCoupon] = useState<boolean>(false);
+  
+  const baseAmount = bookingData.duration * 1150;
+  const finalAmount = baseAmount - couponDiscount;
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    setValidatingCoupon(true);
+    setCouponError('');
+
+    try {
+      const response = await fetch('/api/simple-coupon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: couponCode.trim(),
+          amount: baseAmount
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.valid) {
+        setCouponDiscount(data.discountAmount);
+        setAppliedCoupon(couponCode.trim());
+        setCouponError('');
+      } else {
+        setCouponError(data.error || 'Invalid coupon code');
+        setCouponDiscount(0);
+        setAppliedCoupon('');
+      }
+    } catch (_error) {
+      setCouponError('Failed to validate coupon');
+      setCouponDiscount(0);
+      setAppliedCoupon('');
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponCode('');
+    setCouponDiscount(0);
+    setAppliedCoupon('');
+    setCouponError('');
+  };
 
   const createRazorpayOrder = async () => {
     try {
@@ -31,7 +91,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: totalAmount,
+          amount: finalAmount,
           currency: 'INR'
         }),
       });
@@ -62,7 +122,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         name: 'Studio Booking',
         description: `Booking for ${bookingData.date} at ${bookingData.startTime}`,
         order_id: orderData.id,
-        handler: async (response: any) => {
+        handler: async (response: Record<string, unknown>) => {
           try {
             await confirmBooking(response, orderData.id);
           } catch (error) {
@@ -98,7 +158,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
-  const confirmBooking = async (paymentResponse: any, orderId: string) => {
+  const confirmBooking = async (paymentResponse: Record<string, unknown>, orderId: string) => {
     try {
       const response = await fetch('/api/bookings', {
         method: 'POST',
@@ -107,10 +167,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         },
         body: JSON.stringify({
           ...bookingData,
-          originalAmount: bookingData.duration * 1150,
-          discountAmount: (bookingData.duration * 1150) - totalAmount,
-          totalAmount,
-          couponCode: totalAmount < (bookingData.duration * 1150) ? 'APPLIED' : null,
+          originalAmount: baseAmount,
+          discountAmount: couponDiscount,
+          totalAmount: finalAmount,
+          couponCode: appliedCoupon || null,
           razorpayOrderId: orderId,
           razorpayPaymentId: paymentResponse.razorpay_payment_id,
           razorpaySignature: paymentResponse.razorpay_signature,
@@ -174,10 +234,109 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <span>Phone:</span>
               <span>{bookingData.phone}</span>
             </div>
+            {couponDiscount > 0 && (
+              <div className="summary-row">
+                <span>Original Amount:</span>
+                <span style={{ textDecoration: 'line-through' }}>₹{baseAmount}</span>
+              </div>
+            )}
+            {couponDiscount > 0 && (
+              <div className="summary-row">
+                <span>Discount ({appliedCoupon}):</span>
+                <span style={{ color: '#28a745' }}>-₹{couponDiscount}</span>
+              </div>
+            )}
             <div className="summary-row total">
               <span>Total Amount:</span>
-              <span>₹{totalAmount}</span>
+              <span>₹{finalAmount}</span>
             </div>
+          </div>
+
+          {/* Coupon Section */}
+          <div className="coupon-section" style={{ 
+            border: '1px solid #ddd', 
+            borderRadius: '8px', 
+            padding: '15px', 
+            marginBottom: '20px',
+            background: '#f9f9f9'
+          }}>
+            <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>🎟️ Have a Coupon?</h4>
+            <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0' }}>
+              Available coupons: STUDIO15 (15% off), DISCOUNT15 (15% off)
+            </p>
+            
+            {!appliedCoupon ? (
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <input
+                  type="text"
+                  placeholder="Enter coupon code"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    border: '1px solid #ccc',
+                    borderRadius: '4px',
+                    fontSize: '14px'
+                  }}
+                />
+                <button
+                  onClick={validateCoupon}
+                  disabled={validatingCoupon || !couponCode.trim()}
+                  style={{
+                    background: '#007bff',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: validatingCoupon || !couponCode.trim() ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    opacity: validatingCoupon || !couponCode.trim() ? 0.6 : 1
+                  }}
+                >
+                  {validatingCoupon ? 'Validating...' : 'Apply'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                background: '#d4edda',
+                padding: '10px',
+                borderRadius: '4px',
+                border: '1px solid #c3e6cb'
+              }}>
+                <span style={{ color: '#155724', fontWeight: 'bold' }}>
+                  ✅ {appliedCoupon} applied! You saved ₹{couponDiscount}
+                </span>
+                <button
+                  onClick={removeCoupon}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#721c24',
+                    cursor: 'pointer',
+                    fontSize: '18px'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            
+            {couponError && (
+              <div style={{ 
+                color: '#721c24', 
+                fontSize: '12px', 
+                marginTop: '5px',
+                background: '#f8d7da',
+                padding: '5px 10px',
+                borderRadius: '4px'
+              }}>
+                {couponError}
+              </div>
+            )}
           </div>
 
           {error && (
@@ -192,7 +351,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               onClick={handlePayment}
               disabled={processing}
             >
-              {processing ? 'Processing...' : `Pay ₹${totalAmount}`}
+              {processing ? 'Processing...' : `Pay ₹${finalAmount}`}
             </button>
             <button className="cancel-button" onClick={onClose}>
               Cancel

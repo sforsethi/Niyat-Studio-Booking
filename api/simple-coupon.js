@@ -45,6 +45,31 @@ export default function handler(req, res) {
       });
     }
 
+    // Add 15% discount coupon
+    if (code.toUpperCase() === 'STUDIO15' || code.toUpperCase() === 'DISCOUNT15') {
+      const discountAmount = Math.floor((amount * 15) / 100);
+      
+      if (amount < 1000) {
+        return res.json({ 
+          valid: false, 
+          error: 'Minimum booking amount ₹1000 required' 
+        });
+      }
+
+      return res.json({
+        valid: true,
+        coupon: {
+          code: code.toUpperCase(),
+          description: '15% discount on studio bookings',
+          discountType: 'percentage',
+          discountValue: 15
+        },
+        originalAmount: amount,
+        discountAmount: discountAmount,
+        finalAmount: amount - discountAmount
+      });
+    }
+
     return res.json({ 
       valid: false, 
       error: 'Invalid coupon code' 
