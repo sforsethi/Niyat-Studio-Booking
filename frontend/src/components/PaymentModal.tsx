@@ -45,7 +45,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     setCouponError('');
 
     try {
-      const response = await fetch('/api/test-coupon', {
+      const response = await fetch('/api/validate-coupon', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -267,7 +267,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           }}>
             <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>🎟️ Have a Coupon?</h4>
             <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0' }}>
-              Available coupon: STUDIO15 (15% off, min ₹1000)
+              Available coupons: STUDIO15 (15% off), DISCOUNT15 (15% off), GAURAV-NIYAT (18% off)
             </p>
             
             {!appliedCoupon ? (
