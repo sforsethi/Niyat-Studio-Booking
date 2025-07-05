@@ -15,18 +15,50 @@ export default async function handler(req, res) {
   try {
     const { amount, currency = 'INR' } = req.body;
     
-    // Mock order creation (since we don't have Razorpay keys in serverless)
-    const order = {
-      id: `order_${Date.now()}`,
+    // Check for Razorpay configuration
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+    const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+    
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      return res.status(500).json({ 
+        error: 'Razorpay configuration missing',
+        details: 'RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables are required'
+      });
+    }
+
+    // Create Razorpay order
+    const razorpayOptions = {
       amount: amount * 100, // Convert to paise
       currency: currency,
-      status: 'created',
       receipt: `receipt_${Date.now()}`
     };
 
+    // Use Razorpay REST API
+    const auth = Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString('base64');
+    
+    const response = await fetch('https://api.razorpay.com/v1/orders', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(razorpayOptions)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Razorpay API error:', errorData);
+      return res.status(500).json({ 
+        error: 'Failed to create Razorpay order',
+        details: errorData
+      });
+    }
+
+    const order = await response.json();
     res.json(order);
+    
   } catch (error) {
     console.error('Order creation error:', error);
-    res.status(500).json({ error: 'Failed to create order' });
+    res.status(500).json({ error: 'Failed to create order', details: error.message });
   }
 }
