@@ -1,14 +1,24 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Studio Booking System</title>
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Studio Booking - Test</title>
+</head>
+<body>
+    <h1>Studio Booking System</h1>
+    <p>Testing deployment...</p>
+    <button onclick="testAPI()">Test API</button>
+    <div id="result"></div>
+    
+    <script>
+    async function testAPI() {
+        try {
+            const response = await fetch('/api/index');
+            const data = await response.json();
+            document.getElementById('result').innerHTML = 'API Works: ' + JSON.stringify(data);
+        } catch (error) {
+            document.getElementById('result').innerHTML = 'API Error: ' + error.message;
+        }
+    }
+    </script>
+</body>
 </html>
