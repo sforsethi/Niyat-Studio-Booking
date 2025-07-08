@@ -37,13 +37,13 @@ export default function handler(req, res) {
         minAmount: 1000,
         maxDiscount: null
       },
-      'GAURAV-NIYAT': {
-        code: 'GAURAV-NIYAT',
-        description: 'Special VIP discount for Gaurav',
+      'FLAT18': {
+        code: 'FLAT18',
+        description: 'Flat 18% discount',
         discountType: 'percentage', 
         discountValue: 18,
         minAmount: 500,
-        maxDiscount: 1000
+        maxDiscount: null
       }
     };
 

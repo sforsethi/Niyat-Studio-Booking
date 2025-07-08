@@ -80,7 +80,7 @@ const BookingSystem: React.FC = () => {
 
       {step === 2 && selectedDate && (
         <div className="step-content">
-          <h2>Available Time Slots - {selectedDate}</h2>
+          <h2>Available Time Slots - {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
           <div className="duration-selector">
             <label htmlFor="duration">Duration (hours):</label>
             <select 

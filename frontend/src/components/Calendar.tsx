@@ -32,7 +32,7 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect }) => {
   };
   
   const handleDateClick = (day: number) => {
-    const selectedDate = new Date(currentYear, currentMonth, day);
+    const selectedDate = new Date(currentYear, currentMonth, day + 1); // ADD +1 TO FIX DATE OFFSET
     if (selectedDate >= today || selectedDate.toDateString() === today.toDateString()) {
       const dateString = selectedDate.toISOString().split('T')[0];
       onDateSelect(dateString);
