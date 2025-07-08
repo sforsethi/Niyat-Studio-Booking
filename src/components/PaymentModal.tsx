@@ -35,6 +35,37 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const baseAmount = bookingData.duration * 1150;
   const finalAmount = baseAmount - couponDiscount;
 
+  const formatDisplayDate = (dateString: string) => {
+    // Parse the date string manually
+    const [yearStr, monthStr, dayStr] = dateString.split('-');
+    const year = parseInt(yearStr);
+    const month = parseInt(monthStr);
+    const day = parseInt(dayStr);
+    
+    // Month names array
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    // Calculate day of week using Zeller's congruence (no Date object)
+    let m = month;
+    let y = year;
+    if (month < 3) {
+      m += 12;
+      y -= 1;
+    }
+    const k = y % 100;
+    const j = Math.floor(y / 100);
+    const dayOfWeek = (day + Math.floor((13 * (m + 1)) / 5) + k + Math.floor(k / 4) + Math.floor(j / 4) - 2 * j) % 7;
+    const adjustedDayOfWeek = ((dayOfWeek + 6) % 7); // Convert to 0=Sunday format
+    
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = dayNames[adjustedDayOfWeek];
+    
+    return `${dayName}, ${monthNames[month - 1]} ${day}, ${year}`;
+  };
+
   const validateCoupon = async () => {
     if (!couponCode.trim()) {
       setCouponError('Please enter a coupon code');
@@ -129,7 +160,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Studio Booking',
-        description: `Booking for ${bookingData.date} at ${bookingData.startTime}`,
+        description: `Booking for ${formatDisplayDate(bookingData.date)} at ${bookingData.startTime}`,
         order_id: orderData.id,
         handler: async (response: Record<string, unknown>) => {
           try {
@@ -221,7 +252,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             <h3>Booking Details</h3>
             <div className="summary-row">
               <span>Date:</span>
-              <span>{bookingData.date}</span>
+              <span>{formatDisplayDate(bookingData.date)}</span>
             </div>
             <div className="summary-row">
               <span>Time:</span>

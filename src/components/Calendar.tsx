@@ -6,6 +6,7 @@ interface CalendarProps {
 
 const Calendar: React.FC<CalendarProps> = ({ onDateSelect }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [debugInfo, setDebugInfo] = useState<string>('');
   
   const today = new Date();
   const currentYear = currentDate.getFullYear();
@@ -33,8 +34,18 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect }) => {
   
   const handleDateClick = (day: number) => {
     const selectedDate = new Date(currentYear, currentMonth, day);
+    
     if (selectedDate >= today || selectedDate.toDateString() === today.toDateString()) {
-      const dateString = selectedDate.toISOString().split('T')[0];
+      // Use raw values directly without Date object methods
+      const year = currentYear;
+      const month = String(currentMonth + 1).padStart(2, '0');
+      const dayStr = String(day).padStart(2, '0');
+      const dateString = `${year}-${month}-${dayStr}`;
+      
+      // Update debug info
+      const debugMessage = `Clicked day ${day} in ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][currentMonth]} ${currentYear}. Created: ${dateString}`;
+      setDebugInfo(debugMessage);
+      
       onDateSelect(dateString);
     }
   };
@@ -75,6 +86,18 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect }) => {
   
   return (
     <div className="calendar">
+      {debugInfo && (
+        <div style={{
+          padding: '15px',
+          backgroundColor: '#ffeb3b',
+          border: '2px solid #ff9800',
+          borderRadius: '8px',
+          marginBottom: '15px',
+          fontFamily: 'monospace'
+        }}>
+          <strong>🔍 DEBUG:</strong> {debugInfo}
+        </div>
+      )}
       <div className="calendar-header">
         <button onClick={previousMonth} className="nav-button">
           &#8249;
@@ -98,6 +121,21 @@ const Calendar: React.FC<CalendarProps> = ({ onDateSelect }) => {
         
         <div className="calendar-days">
           {renderCalendarDays()}
+        </div>
+        
+        <div style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          background: 'red',
+          color: 'white',
+          padding: '20px',
+          borderRadius: '8px',
+          zIndex: 9999,
+          fontSize: '16px',
+          fontWeight: 'bold'
+        }}>
+          TESTING - Calendar component loaded!
         </div>
       </div>
     </div>

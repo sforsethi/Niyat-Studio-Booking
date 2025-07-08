@@ -33,7 +33,12 @@
       "Bash(npm run lint)",
       "Bash(cp:*)",
       "Bash(PORT=5001 npm start)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(open http://localhost:5174/)",
+      "Bash(open http://localhost:5173/)",
+      "Bash(osascript:*)",
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": []
   }
