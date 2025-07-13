@@ -20,96 +20,42 @@ declare global {
 
 const PaymentModal: React.FC<PaymentModalProps> = ({
   bookingData,
-  totalAmount: _totalAmount,
+  totalAmount,
   onSuccess,
   onClose
 }) => {
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [couponCode, setCouponCode] = useState<string>('');
-  const [couponDiscount, setCouponDiscount] = useState<number>(0);
-  const [couponError, setCouponError] = useState<string>('');
-  const [appliedCoupon, setAppliedCoupon] = useState<string>('');
-  const [validatingCoupon, setValidatingCoupon] = useState<boolean>(false);
   
   const baseAmount = bookingData.duration * 1150;
-  const finalAmount = baseAmount - couponDiscount;
+  const discount = baseAmount - totalAmount;
+  const hasDiscount = discount > 0;
 
-  const validateCoupon = async () => {
-    if (!couponCode.trim()) {
-      setCouponError('Please enter a coupon code');
-      return;
-    }
-
-    setValidatingCoupon(true);
-    setCouponError('');
-
-    try {
-      const response = await fetch('/api/validate-coupon', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: couponCode.trim(),
-          amount: baseAmount
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Coupon validation response:', data);
-
-      if (data.valid) {
-        console.log('Coupon is valid, applying discount:', data.discountAmount);
-        setCouponDiscount(data.discountAmount);
-        setAppliedCoupon(couponCode.trim());
-        setCouponError('');
-        console.log('Coupon applied successfully');
-      } else {
-        console.log('Coupon is invalid:', data.error);
-        setCouponError(data.error || 'Invalid coupon code');
-        setCouponDiscount(0);
-        setAppliedCoupon('');
-      }
-    } catch (error) {
-      console.error('Coupon validation error:', error);
-      setCouponError(`Failed to validate coupon: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setCouponDiscount(0);
-      setAppliedCoupon('');
-    } finally {
-      setValidatingCoupon(false);
-    }
-  };
-
-  const removeCoupon = () => {
-    setCouponCode('');
-    setCouponDiscount(0);
-    setAppliedCoupon('');
-    setCouponError('');
-  };
 
   const createRazorpayOrder = async () => {
     try {
+      console.log('Creating Razorpay order with amount:', totalAmount);
+      
       const response = await fetch('/api/create-order', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: finalAmount,
+          amount: totalAmount,
           currency: 'INR'
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create order');
+        const errorData = await response.text();
+        console.error('Create order failed:', response.status, errorData);
+        throw new Error(`Failed to create order: ${response.status} ${errorData}`);
       }
 
-      return await response.json();
+      const orderData = await response.json();
+      console.log('Order created successfully:', orderData);
+      return orderData;
     } catch (error) {
       console.error('Error creating order:', error);
       throw error;
@@ -121,8 +67,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       setProcessing(true);
       setError('');
 
+      console.log('Initiating payment with amount:', totalAmount);
+      if (hasDiscount) {
+        console.log('Discount applied:', discount);
+      }
+
       // Create Razorpay order
       const orderData = await createRazorpayOrder();
+      console.log('Razorpay order created:', orderData);
       
       const options = {
         key: 'rzp_live_LoswuqskrUoMJx',
@@ -155,6 +107,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         }
       };
 
+      console.log('Razorpay options:', options);
+
       if (window.Razorpay) {
         const rzp = new window.Razorpay(options);
         rzp.open();
@@ -162,7 +116,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         throw new Error('Razorpay SDK not loaded');
       }
     } catch (error) {
-      setError('Failed to initiate payment. Please try again.');
+      console.error('Payment initiation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setError(`Failed to initiate payment: ${errorMessage}`);
       setProcessing(false);
     }
   };
@@ -177,9 +133,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         body: JSON.stringify({
           ...bookingData,
           originalAmount: baseAmount,
-          discountAmount: couponDiscount,
-          totalAmount: finalAmount,
-          couponCode: appliedCoupon || null,
+          discountAmount: discount,
+          totalAmount: totalAmount,
+          couponCode: null, // Coupon is handled in the parent component
           razorpayOrderId: orderId,
           razorpayPaymentId: paymentResponse.razorpay_payment_id,
           razorpaySignature: paymentResponse.razorpay_signature,
@@ -243,21 +199,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <span>Phone:</span>
               <span>{bookingData.phone}</span>
             </div>
-            {couponDiscount > 0 && (
+            {hasDiscount && (
               <div className="summary-row">
                 <span>Original Amount:</span>
                 <span style={{ textDecoration: 'line-through' }}>₹{baseAmount}</span>
               </div>
             )}
-            {couponDiscount > 0 && (
+            {hasDiscount && (
               <div className="summary-row">
-                <span>Discount ({appliedCoupon}):</span>
-                <span style={{ color: '#28a745' }}>-₹{couponDiscount}</span>
+                <span>Discount Applied:</span>
+                <span style={{ color: '#28a745' }}>-₹{discount}</span>
               </div>
             )}
             <div className="summary-row total">
               <span>Total Amount:</span>
-              <span>₹{finalAmount}</span>
+              <span>₹{totalAmount}</span>
             </div>
           </div>
 
@@ -274,7 +230,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               onClick={handlePayment}
               disabled={processing}
             >
-              {processing ? 'Processing...' : `Pay ₹${finalAmount}`}
+              {processing ? 'Processing...' : `Pay ₹${totalAmount}`}
             </button>
             <button className="cancel-button" onClick={onClose}>
               Cancel
