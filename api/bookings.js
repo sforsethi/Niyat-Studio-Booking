@@ -29,8 +29,16 @@ export default async function handler(req, res) {
       razorpaySignature
     } = req.body;
 
+    // Log incoming request for debugging
+    console.log('Booking request received:', {
+      name, email, phone, date, startTime, duration,
+      razorpayOrderId, razorpayPaymentId,
+      hasSignature: !!razorpaySignature
+    });
+
     // Verify required fields
     if (!name || !email || !phone || !date || !startTime || !duration || !razorpayOrderId || !razorpayPaymentId) {
+      console.error('Missing required fields:', { name, email, phone, date, startTime, duration, razorpayOrderId, razorpayPaymentId });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
