@@ -35,7 +35,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/admin/bookings');
+      const response = await fetch('/api/admin-bookings');
       const data = await response.json();
       setBookings(data.bookings || []);
     } catch (err) {
