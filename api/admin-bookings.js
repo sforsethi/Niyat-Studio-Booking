@@ -13,27 +13,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // For now, return mock data since you don't have a database on Vercel
-    // In production, you'd connect to your database here
-    const mockBookings = [
-      {
-        id: 1,
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '1234567890',
-        date: '2024-01-15',
-        startTime: '10:00',
-        endTime: '12:00',
-        totalAmount: 2000,
-        status: 'confirmed',
-        paymentId: 'pay_123456',
-        createdAt: new Date().toISOString()
-      }
-    ];
+    // Get bookings from storage
+    const { getBookings } = require('../lib/bookings-storage');
+    const bookings = getBookings();
 
     res.json({
-      total: mockBookings.length,
-      bookings: mockBookings
+      total: bookings.length,
+      bookings: bookings
     });
     
   } catch (error) {
