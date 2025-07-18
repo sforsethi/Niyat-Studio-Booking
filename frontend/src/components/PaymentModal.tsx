@@ -125,7 +125,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
       if (window.Razorpay) {
         const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', function (response: any) {
+        (rzp as any).on('payment.failed', function (response: any) {
           console.error('Payment failed event:', response);
           setError(`Payment failed: ${response.error.description || response.error.reason || 'Payment declined'}`);
           setProcessing(false);
