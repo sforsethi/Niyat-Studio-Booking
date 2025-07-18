@@ -20,6 +20,10 @@ export default async function handler(req, res) {
     const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
     
     if (!razorpayKeyId || !razorpayKeySecret) {
+      console.error('Razorpay configuration missing:', { 
+        hasKeyId: !!razorpayKeyId, 
+        hasKeySecret: !!razorpayKeySecret 
+      });
       return res.status(500).json({ 
         error: 'Razorpay configuration missing',
         details: 'RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables are required'
@@ -32,6 +36,12 @@ export default async function handler(req, res) {
       currency: currency,
       receipt: `receipt_${Date.now()}`
     };
+    
+    console.log('Creating Razorpay order:', { 
+      amount: razorpayOptions.amount, 
+      currency: razorpayOptions.currency,
+      keyId: razorpayKeyId 
+    });
 
     // Use Razorpay REST API
     const auth = Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString('base64');
@@ -47,10 +57,16 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Razorpay API error:', errorData);
+      console.error('Razorpay API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+        keyId: razorpayKeyId
+      });
       return res.status(500).json({ 
         error: 'Failed to create Razorpay order',
-        details: errorData
+        details: errorData,
+        status: response.status
       });
     }
 

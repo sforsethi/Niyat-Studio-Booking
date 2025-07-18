@@ -77,13 +77,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       console.log('Razorpay order created:', orderData);
       
       const options = {
-        key: 'rzp_live_LoswuqskrUoMJx',
+        key: 'rzp_live_e8b0gxbJekncVP',
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Studio Booking',
         description: `Booking for ${bookingData.date} at ${bookingData.startTime}`,
         order_id: orderData.id,
         handler: async (response: Record<string, unknown>) => {
+          console.log('Payment successful, response:', response);
           try {
             await confirmBooking(response, orderData.id);
           } catch (error) {
@@ -101,8 +102,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         },
         modal: {
           ondismiss: () => {
+            console.log('Payment modal dismissed');
             setProcessing(false);
             setError('Payment cancelled by user');
+          },
+          escape: false,
+          backdropclose: false,
+          handleback: true,
+          confirm_close: true,
+          callback: (response: any) => {
+            console.log('Razorpay callback response:', response);
+            if (response.error) {
+              console.error('Razorpay error:', response.error);
+              setError(`Payment failed: ${response.error.description || response.error.reason || 'Unknown error'}`);
+              setProcessing(false);
+            }
           }
         }
       };
@@ -111,6 +125,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
       if (window.Razorpay) {
         const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (response: any) {
+          console.error('Payment failed event:', response);
+          setError(`Payment failed: ${response.error.description || response.error.reason || 'Payment declined'}`);
+          setProcessing(false);
+        });
         rzp.open();
       } else {
         throw new Error('Razorpay SDK not loaded');
