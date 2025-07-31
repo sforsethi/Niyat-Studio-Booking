@@ -166,7 +166,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           try {
             await confirmBooking(response, orderData.id);
           } catch (error) {
-            setError('Payment successful but booking confirmation failed. Please contact support.');
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            setError(errorMessage);
+            alert(`Booking Error: ${errorMessage}`);
             console.error('Booking confirmation error:', error);
           }
         },
