@@ -42,6 +42,38 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Check for booking conflicts BEFORE processing payment
+    try {
+      const { bookingHelpers } = require('../lib/supabase.js');
+      const conflictCheck = await bookingHelpers.checkBookingConflict(date, startTime, duration);
+      
+      if (conflictCheck.hasConflict) {
+        const conflictTime = conflictCheck.conflictingBooking.startTime;
+        const conflictDuration = conflictCheck.conflictingBooking.duration;
+        const conflictEndHour = parseInt(conflictTime.split(':')[0]) + conflictDuration;
+        
+        console.log('Booking conflict detected:', {
+          requestedDate: date,
+          requestedTime: startTime,
+          requestedDuration: duration,
+          conflictingTime: conflictTime,
+          conflictingDuration: conflictDuration
+        });
+        
+        return res.status(409).json({ 
+          error: 'Time slot unavailable',
+          message: `This time slot is already booked. There's an existing booking from ${conflictTime} to ${conflictEndHour}:00. Please choose a different time.`,
+          conflictDetails: {
+            existingBookingStart: conflictTime,
+            existingBookingEnd: `${conflictEndHour}:00`
+          }
+        });
+      }
+    } catch (conflictError) {
+      console.error('Error checking booking conflicts:', conflictError);
+      // Continue with booking if conflict check fails (graceful degradation)
+    }
+
     // Verify Razorpay signature for security
     if (razorpaySignature && process.env.RAZORPAY_KEY_SECRET) {
       const crypto = require('crypto');
