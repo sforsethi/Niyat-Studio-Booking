@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   try {
     // Get bookings from storage
     const { getBookings } = require('../lib/bookings-storage');
-    const bookings = getBookings();
+    const bookings = await getBookings();
 
     res.json({
       total: bookings.length,

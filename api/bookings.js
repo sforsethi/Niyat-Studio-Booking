@@ -89,7 +89,7 @@ export default async function handler(req, res) {
 
     // Save booking to storage
     const { saveBooking } = require('../lib/bookings-storage');
-    const savedBooking = saveBooking(bookingConfirmation);
+    const savedBooking = await saveBooking(bookingConfirmation);
     
     // Log booking for debugging (in production, you might want to send this to an email service)
     console.log('Booking confirmed:', JSON.stringify(savedBooking, null, 2));

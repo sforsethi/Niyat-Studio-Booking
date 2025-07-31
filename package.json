@@ -6,6 +6,7 @@
     "build": "echo 'No build needed for root' && exit 0"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
     "sqlite3": "^5.1.6"
   }
 }
