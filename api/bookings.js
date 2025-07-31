@@ -74,10 +74,12 @@ export default async function handler(req, res) {
       name,
       email,
       phone,
-      date: bookingDate,
+      date: bookingDate, // Formatted date for display
+      originalDate: date, // Original date for database
       startTime,
       endTime,
-      duration: `${duration} hour${duration > 1 ? 's' : ''}`,
+      duration: duration, // Keep as number for database
+      durationText: `${duration} hour${duration > 1 ? 's' : ''}`, // For display
       originalAmount,
       discountAmount: discountAmount || 0,
       totalAmount,
