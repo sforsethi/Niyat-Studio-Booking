@@ -162,7 +162,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to confirm booking');
+        const errorData = await response.json();
+        
+        // Handle specific conflict error (409)
+        if (response.status === 409) {
+          throw new Error(errorData.message || 'This time slot is no longer available. Please choose a different time.');
+        }
+        
+        throw new Error(errorData.message || 'Failed to confirm booking');
       }
 
       const result = await response.json();
