@@ -27,20 +27,80 @@ const BookingSystem: React.FC = () => {
     setStep(2);
   };
 
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
-    setStep(3);
+  const handleTimeSelect = async (time: string) => {
+    // Check availability before proceeding
+    try {
+      const response = await fetch('/api/check-availability', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: selectedDate,
+          startTime: time,
+          duration: duration
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (!result.available) {
+        alert(`❌ Time Slot Unavailable\n\n${result.message}\n\nPlease choose a different time.`);
+        return;
+      }
+      
+      setSelectedTime(time);
+      setStep(3);
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      // Allow booking if availability check fails (graceful degradation)
+      setSelectedTime(time);
+      setStep(3);
+    }
   };
 
-  const handleBookingSubmit = (formData: Omit<BookingData, 'date' | 'startTime' | 'duration'>) => {
-    const booking: BookingData = {
-      ...formData,
-      date: selectedDate,
-      startTime: selectedTime,
-      duration: duration
-    };
-    setBookingData(booking);
-    setShowPayment(true);
+  const handleBookingSubmit = async (formData: Omit<BookingData, 'date' | 'startTime' | 'duration'>) => {
+    // Double-check availability before proceeding to payment
+    try {
+      const response = await fetch('/api/check-availability', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date: selectedDate,
+          startTime: selectedTime,
+          duration: duration
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (!result.available) {
+        alert(`❌ Time Slot No Longer Available\n\n${result.message}\n\nPlease go back and choose a different time.`);
+        return;
+      }
+      
+      const booking: BookingData = {
+        ...formData,
+        date: selectedDate,
+        startTime: selectedTime,
+        duration: duration
+      };
+      setBookingData(booking);
+      setShowPayment(true);
+    } catch (error) {
+      console.error('Error checking availability before payment:', error);
+      // Allow booking if availability check fails (graceful degradation)
+      const booking: BookingData = {
+        ...formData,
+        date: selectedDate,
+        startTime: selectedTime,
+        duration: duration
+      };
+      setBookingData(booking);
+      setShowPayment(true);
+    }
   };
 
   const resetBooking = () => {
