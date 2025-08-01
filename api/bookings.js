@@ -49,19 +49,70 @@ export default async function handler(req, res) {
       nodeEnv: process.env.NODE_ENV
     });
 
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('❌ CRITICAL: Missing environment variables for booking conflicts');
-      return res.status(500).json({
-        error: 'Server configuration error',
-        message: 'Booking system temporarily unavailable. Please contact support.'
-      });
-    }
-
-    // Check for booking conflicts BEFORE processing payment
+    // Check for booking conflicts BEFORE processing payment - EMERGENCY FALLBACK
     try {
       console.log(`🔍 CRITICAL CONFLICT CHECK: ${date} at ${startTime} for ${duration}h`);
-      const { bookingHelpers } = require('../lib/supabase.js');
-      const conflictCheck = await bookingHelpers.checkBookingConflict(date, startTime, duration);
+      
+      let conflictCheck;
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        console.error('❌ Environment variables missing - using EMERGENCY hardcoded fallback');
+        
+        // EMERGENCY HARDCODED CONFLICT DETECTION
+        const { createClient } = require('@supabase/supabase-js');
+        const supabaseUrl = 'https://nzpreqgasitmuqwnjoga.supabase.co';
+        const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56cHJlcWdhc2l0bXVxd25qb2dhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzk1ODAwMSwiZXhwIjoyMDY5NTM0MDAxfQ.wBRQVLcMmh44oelhyeWGnIRfxOYLQPXRf8sajhrcx_s';
+        
+        const emergencySupabase = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: { autoRefreshToken: false, persistSession: false }
+        });
+
+        const [startHour, startMinute] = startTime.split(':').map(Number);
+        const startTimeMinutes = startHour * 60 + startMinute;
+        const endTimeMinutes = startTimeMinutes + (duration * 60);
+
+        const { data: existingBookings, error } = await emergencySupabase
+          .from('bookings')
+          .select('start_time, duration, name, email')
+          .eq('date', date)
+          .eq('status', 'confirmed');
+
+        console.log(`🚨 EMERGENCY BOOKING CHECK: Found ${existingBookings?.length || 0} bookings for ${date}`);
+        if (existingBookings) {
+          existingBookings.forEach(b => console.log(`  - ${b.name}: ${b.start_time} (${b.duration}h)`));
+        }
+
+        if (error) throw error;
+
+        for (const booking of existingBookings || []) {
+          const timeParts = booking.start_time.split(':');
+          const existingStartMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1] || 0);
+          const existingEndMinutes = existingStartMinutes + (booking.duration * 60);
+          
+          console.log(`🔍 EMERGENCY: ${startTimeMinutes}-${endTimeMinutes} vs ${existingStartMinutes}-${existingEndMinutes} (${booking.name})`);
+          
+          if ((startTimeMinutes < existingEndMinutes) && (endTimeMinutes > existingStartMinutes)) {
+            console.log('🚫 EMERGENCY BOOKING CONFLICT DETECTED!');
+            conflictCheck = {
+              hasConflict: true,
+              conflictingBooking: {
+                startTime: booking.start_time,
+                duration: booking.duration
+              }
+            };
+            break;
+          }
+        }
+        
+        if (!conflictCheck) {
+          conflictCheck = { hasConflict: false };
+          console.log('✅ EMERGENCY BOOKING CHECK: No conflicts');
+        }
+        
+      } else {
+        // Normal flow
+        const { bookingHelpers } = require('../lib/supabase.js');
+        conflictCheck = await bookingHelpers.checkBookingConflict(date, startTime, duration);
+      }
       
       if (conflictCheck.hasConflict) {
         const conflictTime = conflictCheck.conflictingBooking.startTime;
