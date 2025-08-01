@@ -27,14 +27,20 @@ export default async function handler(req, res) {
     if (conflictCheck.hasConflict) {
       const conflictTime = conflictCheck.conflictingBooking.startTime;
       const conflictDuration = conflictCheck.conflictingBooking.duration;
-      const conflictEndHour = parseInt(conflictTime.split(':')[0]) + conflictDuration;
+      
+      // Properly calculate end time
+      const [startHour, startMinute] = conflictTime.split(':').map(Number);
+      const endTotalMinutes = (startHour * 60 + startMinute) + (conflictDuration * 60);
+      const endHour = Math.floor(endTotalMinutes / 60);
+      const endMinute = endTotalMinutes % 60;
+      const conflictEndTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
       
       return res.json({
         available: false,
-        message: `Time slot unavailable. There's an existing booking from ${conflictTime} to ${conflictEndHour}:00.`,
+        message: `Time slot unavailable. There's an existing booking from ${conflictTime} to ${conflictEndTime}.`,
         conflictDetails: {
           existingBookingStart: conflictTime,
-          existingBookingEnd: `${conflictEndHour}:00`
+          existingBookingEnd: conflictEndTime
         }
       });
     }

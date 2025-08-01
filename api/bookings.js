@@ -50,22 +50,29 @@ export default async function handler(req, res) {
       if (conflictCheck.hasConflict) {
         const conflictTime = conflictCheck.conflictingBooking.startTime;
         const conflictDuration = conflictCheck.conflictingBooking.duration;
-        const conflictEndHour = parseInt(conflictTime.split(':')[0]) + conflictDuration;
+        
+        // Properly calculate end time
+        const [startHour, startMinute] = conflictTime.split(':').map(Number);
+        const endTotalMinutes = (startHour * 60 + startMinute) + (conflictDuration * 60);
+        const endHour = Math.floor(endTotalMinutes / 60);
+        const endMinute = endTotalMinutes % 60;
+        const conflictEndTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
         
         console.log('Booking conflict detected:', {
           requestedDate: date,
           requestedTime: startTime,
           requestedDuration: duration,
           conflictingTime: conflictTime,
-          conflictingDuration: conflictDuration
+          conflictingDuration: conflictDuration,
+          conflictingEndTime: conflictEndTime
         });
         
         return res.status(409).json({ 
           error: 'Time slot unavailable',
-          message: `This time slot is already booked. There's an existing booking from ${conflictTime} to ${conflictEndHour}:00. Please choose a different time.`,
+          message: `This time slot is already booked. There's an existing booking from ${conflictTime} to ${conflictEndTime}. Please choose a different time.`,
           conflictDetails: {
             existingBookingStart: conflictTime,
-            existingBookingEnd: `${conflictEndHour}:00`
+            existingBookingEnd: conflictEndTime
           }
         });
       }
@@ -98,7 +105,12 @@ export default async function handler(req, res) {
     });
     
     const bookingTime = startTime;
-    const endTime = `${parseInt(startTime.split(':')[0]) + duration}:00`;
+    // Properly calculate end time
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const endTotalMinutes = (startHour * 60 + startMinute) + (duration * 60);
+    const endHour = Math.floor(endTotalMinutes / 60);
+    const endMinute = endTotalMinutes % 60;
+    const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
     
     // Create booking confirmation data
     const bookingConfirmation = {
