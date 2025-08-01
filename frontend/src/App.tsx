@@ -62,12 +62,36 @@ function App() {
     setStep(2);
   };
 
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
-    if (bookingType === 'recurring') {
-      setStep(3); // Go to recurring options
-    } else {
-      setStep(4); // Go directly to booking form for one-time
+  const handleTimeSelect = async (time: string) => {
+    try {
+      // Check availability before allowing time selection
+      const response = await fetch('/api/check-availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: selectedDate,
+          startTime: time,
+          duration: duration
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (!result.available) {
+        alert(`❌ Time Slot Unavailable\n\n${result.message}\n\nPlease choose a different time.`);
+        return;
+      }
+      
+      // Time is available, proceed
+      setSelectedTime(time);
+      if (bookingType === 'recurring') {
+        setStep(3); // Go to recurring options
+      } else {
+        setStep(4); // Go directly to booking form for one-time
+      }
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      alert('Unable to verify availability. Please try again.');
     }
   };
 
@@ -136,11 +160,34 @@ function App() {
     setCouponError('');
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Show payment modal for proper Razorpay integration
-    setShowPaymentModal(true);
+    try {
+      // Double-check availability before proceeding to payment
+      const response = await fetch('/api/check-availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: selectedDate,
+          startTime: selectedTime,
+          duration: duration
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (!result.available) {
+        alert(`❌ Time Slot No Longer Available\n\n${result.message}\n\nPlease go back and choose a different time.`);
+        return;
+      }
+      
+      // Show payment modal for proper Razorpay integration
+      setShowPaymentModal(true);
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      alert('Unable to verify availability. Please try again.');
+    }
   };
 
   const handlePaymentSuccess = () => {
