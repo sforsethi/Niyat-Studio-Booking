@@ -20,7 +20,25 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields: date, startTime, duration' });
     }
 
+    // Environment check with detailed logging
+    console.log('🔍 Environment check:', {
+      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      nodeEnv: process.env.NODE_ENV
+    });
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ Missing environment variables - conflict detection will fail');
+      // Return available=false as a safety measure when environment is broken
+      return res.status(500).json({
+        available: false,
+        error: 'Server configuration error - booking temporarily unavailable',
+        message: 'Please try again later or contact support'
+      });
+    }
+
     // Check for booking conflicts
+    console.log(`🔍 Checking conflicts for: ${date} at ${startTime} for ${duration}h`);
     const { bookingHelpers } = require('../lib/supabase.js');
     const conflictCheck = await bookingHelpers.checkBookingConflict(date, startTime, duration);
     

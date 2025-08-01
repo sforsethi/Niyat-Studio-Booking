@@ -42,8 +42,24 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Environment check - CRITICAL for conflict detection
+    console.log('📋 Booking request environment check:', {
+      hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      nodeEnv: process.env.NODE_ENV
+    });
+
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('❌ CRITICAL: Missing environment variables for booking conflicts');
+      return res.status(500).json({
+        error: 'Server configuration error',
+        message: 'Booking system temporarily unavailable. Please contact support.'
+      });
+    }
+
     // Check for booking conflicts BEFORE processing payment
     try {
+      console.log(`🔍 CRITICAL CONFLICT CHECK: ${date} at ${startTime} for ${duration}h`);
       const { bookingHelpers } = require('../lib/supabase.js');
       const conflictCheck = await bookingHelpers.checkBookingConflict(date, startTime, duration);
       
@@ -77,8 +93,16 @@ export default async function handler(req, res) {
         });
       }
     } catch (conflictError) {
-      console.error('Error checking booking conflicts:', conflictError);
-      // Continue with booking if conflict check fails (graceful degradation)
+      console.error('❌ CRITICAL ERROR in conflict detection:', conflictError);
+      console.error('Stack:', conflictError.stack);
+      
+      // DO NOT continue with booking if conflict check fails - this is unsafe!
+      // Return error instead to prevent double bookings
+      return res.status(500).json({
+        error: 'Booking validation failed',
+        message: 'Unable to verify time slot availability. Please try again or contact support.',
+        details: 'Conflict detection system error'
+      });
     }
 
     // Verify Razorpay signature for security
