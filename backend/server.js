@@ -292,14 +292,20 @@ app.post('/api/bookings', async (req, res) => {
     const finalDiscountAmount = discountAmount || 0;
     const finalTotalAmount = totalAmount || baseAmount;
 
-    // Check for double booking conflicts
-    const startHour = parseInt(startTime.split(':')[0]);
-    const endHour = startHour + duration;
+    // FIXED: Check for double booking conflicts (now handles minutes properly)
+    console.log(`🔍 CHECKING CONFLICTS: ${date} at ${startTime} for ${duration}h`);
     
-    // Check for existing bookings that would conflict
-    const checkConflict = new Promise((resolve, reject) => {
+    // Convert start time to minutes for proper calculation
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const startTimeMinutes = startHour * 60 + (startMinute || 0);
+    const endTimeMinutes = startTimeMinutes + (duration * 60);
+    
+    console.log(`⏰ Request slot: ${startTimeMinutes}-${endTimeMinutes} minutes (${startHour}:${(startMinute||0).toString().padStart(2,'0')}-${Math.floor(endTimeMinutes/60)}:${(endTimeMinutes%60).toString().padStart(2,'0')})`);
+    
+    // Check SQLite for existing bookings
+    const checkSQLiteConflict = new Promise((resolve, reject) => {
       db.all(
-        'SELECT startTime, duration FROM bookings WHERE date = ? AND status = "confirmed"',
+        'SELECT startTime, duration, name FROM bookings WHERE date = ? AND status = "confirmed"',
         [date],
         (err, existingBookings) => {
           if (err) {
@@ -307,30 +313,104 @@ app.post('/api/bookings', async (req, res) => {
             return;
           }
           
+          console.log(`📋 SQLite: Found ${existingBookings.length} bookings`);
+          
           const hasConflict = existingBookings.some(booking => {
-            const existingStart = parseInt(booking.startTime.split(':')[0]);
-            const existingEnd = existingStart + booking.duration;
+            const [existingHour, existingMinute] = booking.startTime.split(':').map(Number);
+            const existingStartMinutes = existingHour * 60 + (existingMinute || 0);
+            const existingEndMinutes = existingStartMinutes + (booking.duration * 60);
             
-            // Check if new booking overlaps with existing booking
-            return (startHour < existingEnd && endHour > existingStart);
+            console.log(`  📅 ${booking.name}: ${existingStartMinutes}-${existingEndMinutes} minutes`);
+            
+            // FIXED: Proper overlap detection with minutes
+            const overlaps = (startTimeMinutes < existingEndMinutes) && (endTimeMinutes > existingStartMinutes);
+            if (overlaps) {
+              console.log(`  🚫 CONFLICT with ${booking.name}!`);
+            }
+            return overlaps;
           });
           
-          resolve(hasConflict);
+          resolve({ hasConflict, source: 'SQLite' });
         }
       );
     });
 
+    // Check Supabase for admin blocks (if available)
+    const checkSupabaseConflict = async () => {
+      try {
+        // Try to check Supabase for admin blocks
+        const { createClient } = require('@supabase/supabase-js');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://nzpreqgasitmuqwnjoga.supabase.co';
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im56cHJlcWdhc2l0bXVxd25qb2dhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzk1ODAwMSwiZXhwIjoyMDY5NTM0MDAxfQ.wBRQVLcMmh44oelhyeWGnIRfxOYLQPXRf8sajhrcx_s';
+        
+        const supabase = createClient(supabaseUrl, supabaseKey, {
+          auth: { autoRefreshToken: false, persistSession: false }
+        });
+
+        const { data: supabaseBookings, error } = await supabase
+          .from('bookings')
+          .select('start_time, duration, name, email')
+          .eq('date', date)
+          .eq('status', 'confirmed');
+
+        if (error) {
+          console.log('⚠️ Supabase check failed:', error.message);
+          return { hasConflict: false, source: 'Supabase-Error' };
+        }
+
+        console.log(`📋 Supabase: Found ${supabaseBookings.length} bookings`);
+
+        const hasConflict = supabaseBookings.some(booking => {
+          const [existingHour, existingMinute] = booking.start_time.split(':').map(Number);
+          const existingStartMinutes = existingHour * 60 + (existingMinute || 0);
+          const existingEndMinutes = existingStartMinutes + (booking.duration * 60);
+          
+          console.log(`  📅 ${booking.name}: ${existingStartMinutes}-${existingEndMinutes} minutes`);
+          
+          const overlaps = (startTimeMinutes < existingEndMinutes) && (endTimeMinutes > existingStartMinutes);
+          if (overlaps) {
+            console.log(`  🚫 SUPABASE CONFLICT with ${booking.name} (${booking.email})!`);
+          }
+          return overlaps;
+        });
+
+        return { hasConflict, source: 'Supabase' };
+      } catch (error) {
+        console.log('⚠️ Supabase unavailable:', error.message);
+        return { hasConflict: false, source: 'Supabase-Unavailable' };
+      }
+    };
+
     try {
-      const hasConflict = await checkConflict;
-      if (hasConflict) {
+      // Check both SQLite and Supabase for conflicts
+      const [sqliteResult, supabaseResult] = await Promise.all([
+        checkSQLiteConflict,
+        checkSupabaseConflict()
+      ]);
+      
+      console.log('🔍 Conflict check results:', { sqlite: sqliteResult, supabase: supabaseResult });
+      
+      if (sqliteResult.hasConflict || supabaseResult.hasConflict) {
+        const conflictSource = sqliteResult.hasConflict ? 'SQLite' : 'Supabase';
+        const endHour = Math.floor(endTimeMinutes / 60);
+        const endMinute = endTimeMinutes % 60;
+        const endTimeFormatted = `${endHour}:${endMinute.toString().padStart(2, '0')}`;
+        
+        console.log(`🚫 FINAL RESULT: CONFLICT DETECTED from ${conflictSource}`);
+        
         return res.status(409).json({ 
           success: false,
           error: 'Time slot conflict detected. This time is already booked. Please select a different time.',
-          conflictDetails: `${startTime} - ${endHour}:00 on ${date}`
+          conflictDetails: `${startTime} - ${endTimeFormatted} on ${date}`,
+          conflictSource: conflictSource,
+          debug: { sqlite: sqliteResult, supabase: supabaseResult }
         });
       }
+      
+      console.log('✅ FINAL RESULT: No conflicts detected');
     } catch (error) {
-      return res.status(500).json({ error: 'Failed to check booking conflicts' });
+      console.error('❌ Conflict check failed:', error);
+      return res.status(500).json({ error: 'Failed to check booking conflicts', details: error.message });
     }
 
     // Verify payment
