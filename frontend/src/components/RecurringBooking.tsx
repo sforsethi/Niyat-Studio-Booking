@@ -85,21 +85,28 @@ const RecurringBooking: React.FC<RecurringBookingProps> = ({
 
   const handleCreateRecurring = () => {
     const selectedDates = generateRecurringDates();
-    const calculatedTotalCost = selectedDates.length * duration * (selectedDates.length >= 4 ? 999 : 1150);
+    const basePrice = selectedDates.length * duration * 1150; // Full price without any discounts
+    const sessionDiscountPrice = selectedDates.length * duration * (selectedDates.length >= 4 ? 999 : 1150);
+    
+    // Apply additional 20% discount for recurring bookings (same as 4-week preset)
+    const finalDiscountedPrice = Math.round(sessionDiscountPrice * 0.8);
     
     onRecurringSelect({
       frequency,
       endDate: endType === 'date' ? endDate : undefined,
       occurrences: endType === 'occurrences' ? occurrences : undefined,
       selectedDates,
-      finalPrice: calculatedTotalCost,
-      originalPrice: selectedDates.length * duration * 1150,
-      discountApplied: selectedDates.length >= 4
+      finalPrice: finalDiscountedPrice,
+      originalPrice: basePrice,
+      discountApplied: true // Always true for recurring bookings
     });
   };
 
   const recurringDates = generateRecurringDates();
-  const totalCost = recurringDates.length * duration * (recurringDates.length >= 4 ? 999 : 1150);
+  const basePrice = recurringDates.length * duration * 1150; // Full price without any discounts
+  const sessionDiscountPrice = recurringDates.length * duration * (recurringDates.length >= 4 ? 999 : 1150);
+  const finalDiscountedPrice = Math.round(sessionDiscountPrice * 0.8); // Apply 20% discount
+  const totalSavings = basePrice - finalDiscountedPrice;
 
   return (
     <div className="step-content">
@@ -232,9 +239,24 @@ const RecurringBooking: React.FC<RecurringBookingProps> = ({
         
         <div style={{ marginTop: '15px', fontSize: '16px', fontWeight: 'bold', color: '#004085' }}>
           <p style={{ margin: '5px 0' }}>Total Sessions: {recurringDates.length}</p>
-          <p style={{ margin: '5px 0' }}>Total Cost: ₹{totalCost.toLocaleString()}</p>
-          <p style={{ margin: '5px 0', fontSize: '14px', fontWeight: 'normal' }}>
-            (₹{recurringDates.length >= 4 ? duration * 999 : duration * 1150} × {recurringDates.length} sessions)
+          
+          {/* Show pricing breakdown with discounts */}
+          <div style={{ margin: '10px 0', fontSize: '14px', fontWeight: 'normal' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '2px 0' }}>
+              <span>Regular Price:</span>
+              <span style={{ textDecoration: 'line-through', color: '#999' }}>₹{basePrice.toLocaleString()}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', margin: '2px 0', color: '#28a745' }}>
+              <span>Recurring Discount (20%):</span>
+              <span>-₹{totalSavings.toLocaleString()}</span>
+            </div>
+          </div>
+          
+          <p style={{ margin: '8px 0', fontSize: '18px', fontWeight: 'bold', color: '#28a745' }}>
+            Final Price: ₹{finalDiscountedPrice.toLocaleString()}
+          </p>
+          <p style={{ margin: '5px 0', fontSize: '12px', fontWeight: 'normal', color: '#28a745' }}>
+            💰 You save ₹{totalSavings.toLocaleString()} with recurring booking!
           </p>
         </div>
       </div>
@@ -245,7 +267,7 @@ const RecurringBooking: React.FC<RecurringBookingProps> = ({
           className="submit-button"
           style={{ flex: 1, maxWidth: '250px' }}
         >
-          📅 Book {recurringDates.length} Sessions - ₹{totalCost.toLocaleString()}
+          📅 Book {recurringDates.length} Sessions - ₹{finalDiscountedPrice.toLocaleString()}
         </button>
         
         <button 
