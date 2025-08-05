@@ -13,6 +13,9 @@ export interface RecurringData {
   endDate?: string;
   occurrences?: number;
   selectedDates?: string[];
+  discountApplied?: boolean;
+  originalPrice?: number;
+  finalPrice?: number;
 }
 
 const RecurringBooking: React.FC<RecurringBookingProps> = ({
@@ -82,12 +85,16 @@ const RecurringBooking: React.FC<RecurringBookingProps> = ({
 
   const handleCreateRecurring = () => {
     const selectedDates = generateRecurringDates();
+    const calculatedTotalCost = selectedDates.length * duration * (selectedDates.length >= 4 ? 999 : 1150);
     
     onRecurringSelect({
       frequency,
       endDate: endType === 'date' ? endDate : undefined,
       occurrences: endType === 'occurrences' ? occurrences : undefined,
-      selectedDates
+      selectedDates,
+      finalPrice: calculatedTotalCost,
+      originalPrice: selectedDates.length * duration * 1150,
+      discountApplied: selectedDates.length >= 4
     });
   };
 

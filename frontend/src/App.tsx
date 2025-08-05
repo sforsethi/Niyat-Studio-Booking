@@ -128,7 +128,14 @@ function App() {
     setCouponError('');
 
     try {
-      const amount = duration * 1150;
+      // Calculate the correct amount based on booking type
+      const amount = (() => {
+        if (isRecurring && recurringData && recurringData.finalPrice) {
+          return recurringData.finalPrice;
+        }
+        return duration * 1150;
+      })();
+      
       // Fixed endpoint: validate-coupon (not simple-coupon)
       const response = await fetch('/api/validate-coupon', {
         method: 'POST',
@@ -1126,11 +1133,9 @@ function App() {
             isRecurring: isRecurring
           }}
           totalAmount={(() => {
-            if (isRecurring && recurringData && recurringData.selectedDates) {
-              const sessionCount = recurringData.selectedDates.length;
-              const pricePerSession = sessionCount >= 4 ? duration * 999 : duration * 1150;
-              const totalPrice = sessionCount * pricePerSession;
-              return couponData ? couponData.finalAmount : totalPrice;
+            if (isRecurring && recurringData && recurringData.finalPrice) {
+              // Use the pre-calculated final price from recurring data
+              return couponData ? couponData.finalAmount : recurringData.finalPrice;
             }
             return couponData ? couponData.finalAmount : duration * 1150;
           })()}

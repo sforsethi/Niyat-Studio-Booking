@@ -28,10 +28,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [error, setError] = useState<string>('');
   
   const baseAmount = (() => {
-    if (bookingData.isRecurring && bookingData.recurringData?.selectedDates) {
-      const sessionCount = bookingData.recurringData.selectedDates.length;
-      const pricePerSession = sessionCount >= 4 ? bookingData.duration * 999 : bookingData.duration * 1150;
-      return sessionCount * pricePerSession;
+    if (bookingData.isRecurring && bookingData.recurringData?.finalPrice) {
+      // Use the pre-calculated final price from recurring data
+      return bookingData.recurringData.finalPrice;
     }
     return bookingData.duration * 1150;
   })();
