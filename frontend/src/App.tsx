@@ -40,7 +40,17 @@ function App() {
   const [isRecurring, setIsRecurring] = useState<boolean>(false);
   const [recurringData, setRecurringData] = useState<RecurringData | null>(null);
   const [couponCode, setCouponCode] = useState<string>('');
-  const [couponData, setCouponData] = useState<any>(null);
+  const [couponData, setCouponData] = useState<{
+    valid: boolean;
+    finalAmount: number;
+    originalAmount: number;
+    discountAmount: number;
+    coupon: {
+      code: string;
+      description: string;
+    };
+    error?: string;
+  } | null>(null);
   const [couponError, setCouponError] = useState<string>('');
   const [validatingCoupon, setValidatingCoupon] = useState<boolean>(false);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
@@ -1111,9 +1121,19 @@ function App() {
             phone: formData.phone,
             date: selectedDate,
             startTime: selectedTime,
-            duration: duration
+            duration: duration,
+            recurringData: recurringData || undefined,
+            isRecurring: isRecurring
           }}
-          totalAmount={couponData ? couponData.finalAmount : duration * 1150}
+          totalAmount={(() => {
+            if (isRecurring && recurringData && recurringData.selectedDates) {
+              const sessionCount = recurringData.selectedDates.length;
+              const pricePerSession = sessionCount >= 4 ? duration * 999 : duration * 1150;
+              const totalPrice = sessionCount * pricePerSession;
+              return couponData ? couponData.finalAmount : totalPrice;
+            }
+            return couponData ? couponData.finalAmount : duration * 1150;
+          })()}
           onSuccess={handlePaymentSuccess}
           onClose={() => setShowPaymentModal(false)}
         />

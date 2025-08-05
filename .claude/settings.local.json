@@ -38,7 +38,8 @@
       "Bash(open http://localhost:5173/)",
       "Bash(osascript:*)",
       "Bash(cat:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run typecheck:*)"
     ],
     "deny": []
   }

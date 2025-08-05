@@ -26,14 +26,18 @@ export default async function handler(req, res) {
       totalAmount,
       razorpayOrderId,
       razorpayPaymentId,
-      razorpaySignature
+      razorpaySignature,
+      isRecurring,
+      recurringData
     } = req.body;
 
     // Log incoming request for debugging
     console.log('Booking request received:', {
       name, email, phone, date, startTime, duration,
       razorpayOrderId, razorpayPaymentId,
-      hasSignature: !!razorpaySignature
+      hasSignature: !!razorpaySignature,
+      isRecurring: !!isRecurring,
+      recurringDatesCount: recurringData?.selectedDates?.length || 0
     });
 
     // Verify required fields
@@ -51,7 +55,9 @@ export default async function handler(req, res) {
 
     // Check for booking conflicts BEFORE processing payment - EMERGENCY FALLBACK
     try {
-      console.log(`🔍 CRITICAL CONFLICT CHECK: ${date} at ${startTime} for ${duration}h`);
+      // For recurring bookings, check all dates
+      const datesToCheck = isRecurring && recurringData?.selectedDates ? recurringData.selectedDates : [date];
+      console.log(`🔍 CRITICAL CONFLICT CHECK: Checking ${datesToCheck.length} date(s) at ${startTime} for ${duration}h`);
       
       let conflictCheck;
       if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -70,48 +76,68 @@ export default async function handler(req, res) {
         const startTimeMinutes = startHour * 60 + startMinute;
         const endTimeMinutes = startTimeMinutes + (duration * 60);
 
-        const { data: existingBookings, error } = await emergencySupabase
-          .from('bookings')
-          .select('start_time, duration, name, email')
-          .eq('date', date)
-          .eq('status', 'confirmed');
+        // Check conflicts for all dates
+        for (const checkDate of datesToCheck) {
+          const { data: existingBookings, error } = await emergencySupabase
+            .from('bookings')
+            .select('start_time, duration, name, email')
+            .eq('date', checkDate)
+            .eq('status', 'confirmed');
 
-        console.log(`🚨 EMERGENCY BOOKING CHECK: Found ${existingBookings?.length || 0} bookings for ${date}`);
-        if (existingBookings) {
-          existingBookings.forEach(b => console.log(`  - ${b.name}: ${b.start_time} (${b.duration}h)`));
-        }
-
-        if (error) throw error;
-
-        for (const booking of existingBookings || []) {
-          const timeParts = booking.start_time.split(':');
-          const existingStartMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1] || 0);
-          const existingEndMinutes = existingStartMinutes + (booking.duration * 60);
-          
-          console.log(`🔍 EMERGENCY: ${startTimeMinutes}-${endTimeMinutes} vs ${existingStartMinutes}-${existingEndMinutes} (${booking.name})`);
-          
-          if ((startTimeMinutes < existingEndMinutes) && (endTimeMinutes > existingStartMinutes)) {
-            console.log('🚫 EMERGENCY BOOKING CONFLICT DETECTED!');
-            conflictCheck = {
-              hasConflict: true,
-              conflictingBooking: {
-                startTime: booking.start_time,
-                duration: booking.duration
-              }
-            };
-            break;
+          console.log(`🚨 EMERGENCY BOOKING CHECK: Found ${existingBookings?.length || 0} bookings for ${checkDate}`);
+          if (existingBookings) {
+            existingBookings.forEach(b => console.log(`  - ${b.name}: ${b.start_time} (${b.duration}h)`));
           }
+
+          if (error) throw error;
+
+          for (const booking of existingBookings || []) {
+            const timeParts = booking.start_time.split(':');
+            const existingStartMinutes = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1] || 0);
+            const existingEndMinutes = existingStartMinutes + (booking.duration * 60);
+            
+            console.log(`🔍 EMERGENCY: ${startTimeMinutes}-${endTimeMinutes} vs ${existingStartMinutes}-${existingEndMinutes} (${booking.name})`);
+            
+            if ((startTimeMinutes < existingEndMinutes) && (endTimeMinutes > existingStartMinutes)) {
+              console.log(`🚫 EMERGENCY BOOKING CONFLICT DETECTED on ${checkDate}!`);
+              conflictCheck = {
+                hasConflict: true,
+                conflictingDate: checkDate,
+                conflictingBooking: {
+                  startTime: booking.start_time,
+                  duration: booking.duration
+                }
+              };
+              break;
+            }
+          }
+          
+          if (conflictCheck?.hasConflict) break;
         }
         
         if (!conflictCheck) {
           conflictCheck = { hasConflict: false };
-          console.log('✅ EMERGENCY BOOKING CHECK: No conflicts');
+          console.log('✅ EMERGENCY BOOKING CHECK: No conflicts for any dates');
         }
         
       } else {
         // Normal flow
         const { bookingHelpers } = require('../lib/supabase.js');
-        conflictCheck = await bookingHelpers.checkBookingConflict(date, startTime, duration);
+        
+        // Check conflicts for all dates
+        for (const checkDate of datesToCheck) {
+          conflictCheck = await bookingHelpers.checkBookingConflict(checkDate, startTime, duration);
+          
+          if (conflictCheck.hasConflict) {
+            conflictCheck.conflictingDate = checkDate;
+            console.log(`Conflict found on ${checkDate}`);
+            break;
+          }
+        }
+        
+        if (!conflictCheck?.hasConflict) {
+          conflictCheck = { hasConflict: false };
+        }
       }
       
       if (conflictCheck.hasConflict) {
@@ -134,10 +160,13 @@ export default async function handler(req, res) {
           conflictingEndTime: conflictEndTime
         });
         
+        const conflictDateInfo = conflictCheck.conflictingDate ? ` on ${conflictCheck.conflictingDate}` : '';
+        
         return res.status(409).json({ 
           error: 'Time slot unavailable',
-          message: `This time slot is already booked. There's an existing booking from ${conflictTime} to ${conflictEndTime}. Please choose a different time.`,
+          message: `This time slot is already booked${conflictDateInfo}. There's an existing booking from ${conflictTime} to ${conflictEndTime}. ${isRecurring ? 'Please choose a different time slot or modify your recurring schedule.' : 'Please choose a different time.'}`,
           conflictDetails: {
+            conflictingDate: conflictCheck.conflictingDate || date,
             existingBookingStart: conflictTime,
             existingBookingEnd: conflictEndTime
           }
@@ -210,23 +239,93 @@ export default async function handler(req, res) {
 
     // Save booking to storage
     const { saveBooking } = require('../lib/bookings-storage');
-    const savedBooking = await saveBooking(bookingConfirmation);
     
-    // Log booking for debugging (in production, you might want to send this to an email service)
-    console.log('Booking confirmed:', JSON.stringify(savedBooking, null, 2));
-    
-    // Return success response
-    res.json({
-      success: true,
-      message: 'Booking confirmed successfully',
-      booking: bookingConfirmation,
-      instructions: {
-        studio: 'Niyat Studios',
-        address: 'Chittaranjan Park, New Delhi',
-        contact: 'Please save this confirmation for your records',
-        note: 'You will receive a WhatsApp/email confirmation shortly'
+    // Handle recurring bookings
+    if (isRecurring && recurringData?.selectedDates?.length > 0) {
+      console.log(`Processing recurring booking: ${recurringData.selectedDates.length} sessions`);
+      
+      const recurringBookings = [];
+      const recurringGroupId = `RG${Date.now()}`;
+      
+      // Create a booking for each date in the recurring schedule
+      for (const recurringDate of recurringData.selectedDates) {
+        const recurringBookingDate = new Date(recurringDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric', 
+          month: 'long',
+          day: 'numeric'
+        });
+        
+        const recurringBookingData = {
+          id: `NIYAT${Date.now()}${Math.random().toString(36).substr(2, 5)}`,
+          name,
+          email,
+          phone,
+          date: recurringBookingDate,
+          originalDate: recurringDate,
+          startTime,
+          endTime,
+          duration: duration,
+          durationText: `${duration} hour${duration > 1 ? 's' : ''}`,
+          originalAmount: originalAmount / recurringData.selectedDates.length, // Per session amount
+          discountAmount: (discountAmount || 0) / recurringData.selectedDates.length,
+          totalAmount: totalAmount / recurringData.selectedDates.length,
+          couponCode: couponCode || null,
+          paymentId: razorpayPaymentId,
+          status: 'confirmed',
+          createdAt: new Date().toISOString(),
+          recurringGroupId,
+          isRecurring: true,
+          recurringFrequency: recurringData.frequency,
+          recurringSessionNumber: recurringData.selectedDates.indexOf(recurringDate) + 1,
+          recurringTotalSessions: recurringData.selectedDates.length
+        };
+        
+        const savedRecurringBooking = await saveBooking(recurringBookingData);
+        recurringBookings.push(savedRecurringBooking);
       }
-    });
+      
+      console.log(`Recurring bookings created: ${recurringBookings.length} sessions`);
+      
+      // Return success response for recurring bookings
+      res.json({
+        success: true,
+        message: `${recurringBookings.length} recurring sessions confirmed successfully`,
+        booking: {
+          ...bookingConfirmation,
+          recurringGroupId,
+          recurringBookings: recurringBookings.map(b => ({
+            date: b.originalDate,
+            sessionNumber: b.recurringSessionNumber
+          }))
+        },
+        instructions: {
+          studio: 'Niyat Studios',
+          address: 'Chittaranjan Park, New Delhi',
+          contact: 'Please save this confirmation for your records',
+          note: `You will receive a WhatsApp/email confirmation for all ${recurringBookings.length} sessions shortly`
+        }
+      });
+    } else {
+      // Single booking
+      const savedBooking = await saveBooking(bookingConfirmation);
+      
+      // Log booking for debugging (in production, you might want to send this to an email service)
+      console.log('Booking confirmed:', JSON.stringify(savedBooking, null, 2));
+      
+      // Return success response
+      res.json({
+        success: true,
+        message: 'Booking confirmed successfully',
+        booking: bookingConfirmation,
+        instructions: {
+          studio: 'Niyat Studios',
+          address: 'Chittaranjan Park, New Delhi',
+          contact: 'Please save this confirmation for your records',
+          note: 'You will receive a WhatsApp/email confirmation shortly'
+        }
+      });
+    }
     
   } catch (error) {
     console.error('Booking creation error:', error);

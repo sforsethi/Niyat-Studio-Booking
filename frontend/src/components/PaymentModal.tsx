@@ -27,7 +27,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   
-  const baseAmount = bookingData.duration * 1150;
+  const baseAmount = (() => {
+    if (bookingData.isRecurring && bookingData.recurringData?.selectedDates) {
+      const sessionCount = bookingData.recurringData.selectedDates.length;
+      const pricePerSession = sessionCount >= 4 ? bookingData.duration * 999 : bookingData.duration * 1150;
+      return sessionCount * pricePerSession;
+    }
+    return bookingData.duration * 1150;
+  })();
   const discount = baseAmount - totalAmount;
   const hasDiscount = discount > 0;
 
@@ -81,7 +88,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Studio Booking',
-        description: `Booking for ${bookingData.date} at ${bookingData.startTime}`,
+        description: bookingData.isRecurring && bookingData.recurringData?.selectedDates
+          ? `Recurring booking: ${bookingData.recurringData.selectedDates.length} sessions starting ${bookingData.date}`
+          : `Booking for ${bookingData.date} at ${bookingData.startTime}`,
         order_id: orderData.id,
         handler: async (response: Record<string, unknown>) => {
           console.log('Payment successful, response:', response);
@@ -160,6 +169,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           razorpayOrderId: orderId,
           razorpayPaymentId: paymentResponse.razorpay_payment_id,
           razorpaySignature: paymentResponse.razorpay_signature,
+          isRecurring: bookingData.isRecurring || false,
+          recurringData: bookingData.recurringData || null,
         }),
       });
 
@@ -203,18 +214,49 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         <div className="modal-content">
           <div className="booking-summary">
             <h3>Booking Details</h3>
-            <div className="summary-row">
-              <span>Date:</span>
-              <span>{bookingData.date}</span>
-            </div>
-            <div className="summary-row">
-              <span>Time:</span>
-              <span>{bookingData.startTime}</span>
-            </div>
-            <div className="summary-row">
-              <span>Duration:</span>
-              <span>{bookingData.duration} hour{bookingData.duration > 1 ? 's' : ''}</span>
-            </div>
+            {bookingData.isRecurring && bookingData.recurringData?.selectedDates ? (
+              <>
+                <div className="summary-row">
+                  <span>Type:</span>
+                  <span style={{ fontWeight: 'bold', color: '#007bff' }}>🔄 Recurring Booking</span>
+                </div>
+                <div className="summary-row">
+                  <span>Sessions:</span>
+                  <span>{bookingData.recurringData.selectedDates.length} sessions</span>
+                </div>
+                <div className="summary-row">
+                  <span>Start Date:</span>
+                  <span>{bookingData.date}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Time Slot:</span>
+                  <span>{bookingData.startTime}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Duration per session:</span>
+                  <span>{bookingData.duration} hour{bookingData.duration > 1 ? 's' : ''}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Schedule:</span>
+                  <span>{bookingData.recurringData.frequency}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="summary-row">
+                  <span>Date:</span>
+                  <span>{bookingData.date}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Time:</span>
+                  <span>{bookingData.startTime}</span>
+                </div>
+                <div className="summary-row">
+                  <span>Duration:</span>
+                  <span>{bookingData.duration} hour{bookingData.duration > 1 ? 's' : ''}</span>
+                </div>
+              </>
+            )}
             <div className="summary-row">
               <span>Name:</span>
               <span>{bookingData.name}</span>

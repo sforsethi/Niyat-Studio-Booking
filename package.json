@@ -1,0 +1,11 @@
+{
+  "name": "niyat-studio-booking",
+  "version": "1.0.0",
+  "description": "Studio booking system with Vercel + Supabase",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.53.0"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}

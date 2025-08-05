@@ -4,6 +4,17 @@ import TimeSlots from './TimeSlots';
 import BookingForm from './BookingForm';
 import PaymentModal from './PaymentModal';
 
+// Interface for recurring booking data
+interface RecurringData {
+  frequency: 'none' | 'weekly' | 'biweekly' | 'monthly' | 'monthly-weekly';
+  endDate?: string;
+  occurrences?: number;
+  selectedDates?: string[];
+  discountApplied?: boolean;
+  originalPrice?: number;
+  finalPrice?: number;
+}
+
 export interface BookingData {
   date: string;
   startTime: string;
@@ -11,6 +22,8 @@ export interface BookingData {
   name: string;
   email: string;
   phone: string;
+  recurringData?: RecurringData; // For recurring booking data
+  isRecurring?: boolean;
 }
 
 const BookingSystem: React.FC = () => {
