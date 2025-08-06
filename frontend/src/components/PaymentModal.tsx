@@ -88,7 +88,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         currency: orderData.currency,
         name: 'Studio Booking',
         description: bookingData.isRecurring && bookingData.recurringData?.selectedDates
-          ? `Recurring booking: ${bookingData.recurringData.selectedDates.length} sessions starting ${bookingData.date}`
+          ? `Recurring booking: ${bookingData.recurringData.selectedDates.length} sessions starting ${bookingData.date} at ${bookingData.startTime}`
           : `Booking for ${bookingData.date} at ${bookingData.startTime}`,
         order_id: orderData.id,
         handler: async (response: Record<string, unknown>) => {
