@@ -117,7 +117,7 @@ const RecurringBooking: React.FC<RecurringBookingProps> = ({
         <p><strong>Date:</strong> {formatDate(selectedDate)} ({getDayOfWeek(selectedDate)})</p>
         <p><strong>Time:</strong> {formatTime(selectedTime)} - {formatTime(`${parseInt(selectedTime.split(':')[0]) + duration}:00`)}</p>
         <p><strong>Duration:</strong> {duration} hour{duration > 1 ? 's' : ''}</p>
-        <p><strong>Cost per session:</strong> ₹{recurringDates.length >= 4 ? duration * 999 : duration * 1150}</p>
+        <p><strong>Cost per session:</strong> ₹{Math.round((recurringDates.length >= 4 ? duration * 999 : duration * 1150) * 0.8)}</p>
       </div>
 
       <div style={{ 
