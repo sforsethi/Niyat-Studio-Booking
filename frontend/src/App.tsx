@@ -543,7 +543,7 @@ function App() {
                     }
                     
                     const sessionsCount = 4; // Always 4 sessions for next 4 weeks
-                    const regularPrice = sessionsCount * duration * (sessionsCount >= 4 ? 999 : 1150);
+                    const regularPrice = sessionsCount * duration * 1150; // Regular price without discount
                     const hasDiscount = true; // Always 4 sessions, so always discount
                     const discountedPrice = Math.round(regularPrice * 0.8);
                     const savings = regularPrice - discountedPrice;
