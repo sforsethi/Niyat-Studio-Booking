@@ -86,10 +86,9 @@ const RecurringBooking: React.FC<RecurringBookingProps> = ({
   const handleCreateRecurring = () => {
     const selectedDates = generateRecurringDates();
     const basePrice = selectedDates.length * duration * 1150; // Full price without any discounts
-    const sessionDiscountPrice = selectedDates.length * duration * (selectedDates.length >= 4 ? 999 : 1150);
     
-    // Apply additional 20% discount for recurring bookings (same as 4-week preset)
-    const finalDiscountedPrice = Math.round(sessionDiscountPrice * 0.8);
+    // Apply 20% discount for recurring bookings
+    const finalDiscountedPrice = Math.round(basePrice * 0.8);
     
     onRecurringSelect({
       frequency,
@@ -104,8 +103,7 @@ const RecurringBooking: React.FC<RecurringBookingProps> = ({
 
   const recurringDates = generateRecurringDates();
   const basePrice = recurringDates.length * duration * 1150; // Full price without any discounts
-  const sessionDiscountPrice = recurringDates.length * duration * (recurringDates.length >= 4 ? 999 : 1150);
-  const finalDiscountedPrice = Math.round(sessionDiscountPrice * 0.8); // Apply 20% discount
+  const finalDiscountedPrice = Math.round(basePrice * 0.8); // Apply 20% discount
   const totalSavings = basePrice - finalDiscountedPrice;
 
   return (
