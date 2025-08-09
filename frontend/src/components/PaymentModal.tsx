@@ -26,6 +26,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const [processing, setProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [pendingBookingIds, setPendingBookingIds] = useState<string[]>([]);
+  const [bookingGroupId, setBookingGroupId] = useState<string | null>(null);
   
   const baseAmount = (() => {
     if (bookingData.isRecurring && bookingData.recurringData?.finalPrice) {
@@ -71,17 +73,56 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
+  const createPendingBooking = async () => {
+    try {
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? '/api/create-pending-booking' 
+        : `${window.location.origin}/api/create-pending-booking`;
+      
+      console.log('Creating pending booking...');
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...bookingData,
+          originalAmount: baseAmount,
+          discountAmount: discount,
+          totalAmount: totalAmount,
+          couponCode: null,
+          isRecurring: bookingData.isRecurring || false,
+          recurringData: bookingData.recurringData || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create pending booking');
+      }
+
+      const result = await response.json();
+      console.log('Pending booking created:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating pending booking:', error);
+      throw error;
+    }
+  };
+
   const handlePayment = async () => {
     try {
       setProcessing(true);
       setError('');
 
-      console.log('Initiating payment with amount:', totalAmount);
-      if (hasDiscount) {
-        console.log('Discount applied:', discount);
-      }
-
-      // Create Razorpay order
+      console.log('Step 1: Creating pending booking in Supabase...');
+      // First create pending booking in Supabase
+      const pendingBookingResult = await createPendingBooking();
+      setPendingBookingIds(pendingBookingResult.bookingIds);
+      setBookingGroupId(pendingBookingResult.bookingGroupId);
+      
+      console.log('Step 2: Creating Razorpay order...');
+      // Then create Razorpay order
       const orderData = await createRazorpayOrder();
       console.log('Razorpay order created:', orderData);
       
@@ -102,8 +143,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             razorpay_signature: response.razorpay_signature
           });
           try {
-            console.log('Calling confirmBooking function...');
-            await confirmBooking(response, orderData.id);
+            console.log('Step 3: Confirming booking in Supabase...');
+            await confirmBookingStatus(response, orderData.id);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             setError(errorMessage);
@@ -161,16 +202,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
-  const confirmBooking = async (paymentResponse: Record<string, unknown>, orderId: string) => {
-    console.log('confirmBooking called with:', {
+  const confirmBookingStatus = async (paymentResponse: Record<string, unknown>, orderId: string) => {
+    console.log('confirmBookingStatus called with:', {
       paymentResponse,
       orderId,
-      bookingData
+      pendingBookingIds,
+      bookingGroupId
     });
     try {
       const apiUrl = window.location.hostname === 'localhost' 
-        ? '/api/bookings' 
-        : `${window.location.origin}/api/bookings`;
+        ? '/api/confirm-booking' 
+        : `${window.location.origin}/api/confirm-booking`;
       console.log('Making POST request to:', apiUrl);
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -178,16 +220,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...bookingData,
-          originalAmount: baseAmount,
-          discountAmount: discount,
-          totalAmount: totalAmount,
-          couponCode: null, // Coupon is handled in the parent component
+          bookingIds: pendingBookingIds,
+          bookingGroupId: bookingGroupId,
           razorpayOrderId: orderId,
           razorpayPaymentId: paymentResponse.razorpay_payment_id,
           razorpaySignature: paymentResponse.razorpay_signature,
-          isRecurring: bookingData.isRecurring || false,
-          recurringData: bookingData.recurringData || null,
         }),
       });
 
