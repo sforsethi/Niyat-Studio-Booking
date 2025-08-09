@@ -329,9 +329,20 @@ export default async function handler(req, res) {
     
   } catch (error) {
     console.error('Booking creation error:', error);
+    console.error('Full error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({ 
       error: 'Failed to create booking', 
-      details: error.message 
+      details: error.message,
+      debugInfo: {
+        errorType: error.name,
+        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        timestamp: new Date().toISOString()
+      }
     });
   }
 }

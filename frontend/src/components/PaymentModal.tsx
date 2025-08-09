@@ -175,13 +175,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('Booking API error response:', {
+          status: response.status,
+          error: errorData,
+          debugInfo: errorData.debugInfo
+        });
         
         // Handle specific conflict error (409)
         if (response.status === 409) {
           throw new Error(errorData.message || 'This time slot is no longer available. Please choose a different time.');
         }
         
-        throw new Error(errorData.message || 'Failed to confirm booking');
+        // Include debug info in error message for better diagnostics
+        const errorMessage = errorData.details || errorData.message || 'Failed to confirm booking';
+        const debugInfo = errorData.debugInfo ? ` (Debug: ${JSON.stringify(errorData.debugInfo)})` : '';
+        throw new Error(errorMessage + debugInfo);
       }
 
       const result = await response.json();
@@ -194,6 +202,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       }
     } catch (error) {
       console.error('Error confirming booking:', error);
+      console.error('Full error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     } finally {
       setProcessing(false);
