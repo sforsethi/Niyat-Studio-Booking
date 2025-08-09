@@ -42,7 +42,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     try {
       console.log('Creating Razorpay order with amount:', totalAmount);
       
-      const response = await fetch('/api/create-order', {
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? '/api/create-order' 
+        : `${window.location.origin}/api/create-order`;
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -93,7 +96,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         order_id: orderData.id,
         handler: async (response: Record<string, unknown>) => {
           console.log('Payment successful, response:', response);
+          console.log('Payment handler called with:', {
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_signature: response.razorpay_signature
+          });
           try {
+            console.log('Calling confirmBooking function...');
             await confirmBooking(response, orderData.id);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -153,8 +162,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   const confirmBooking = async (paymentResponse: Record<string, unknown>, orderId: string) => {
+    console.log('confirmBooking called with:', {
+      paymentResponse,
+      orderId,
+      bookingData
+    });
     try {
-      const response = await fetch('/api/bookings', {
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? '/api/bookings' 
+        : `${window.location.origin}/api/bookings`;
+      console.log('Making POST request to:', apiUrl);
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
